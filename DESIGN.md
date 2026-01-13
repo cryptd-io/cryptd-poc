@@ -16,7 +16,7 @@ Goal: a minimal proof‑of‑concept where the **backend’s primary responsibil
 | Account‑level symmetric key   | **accountKey**   | Random 32 bytes; generated on client.         |
 | Per‑blob symmetric key        | **blobKey**      | Random 32 bytes; generated per blob.          |
 | Key used to wrap accountKey   | **masterKey**    | Derived from masterSecret via HKDF.           |
-| Authentication proof material | **verifierKey**  | Derived from masterSecret via HKDF.           |
+| Authentication proof material | **loginVerifier** | Derived from masterSecret via HKDF.           |
 | AEAD envelope                 | **container**    | `{ nonce, ciphertext, tag }` (AES‑GCM).       |
 
 Naming principle:
@@ -93,15 +93,15 @@ All derived keys are 256‑bit and cryptographically independent.
 `loginVerifier` is used to prove **account possession** to the server.
 
 * It is **never stored in raw form**.
-* The client derives `loginVerifier` and sends it to server.
-* The server stores **slow hash** of it.
+* The client derives `loginVerifier` and sends it to the server.
+* The server stores a **slow hash** of it.
 
 Server‑side storage:
 
 ```
 loginVerifierHash = PBKDF2‑HMAC‑SHA256(
   password = loginVerifier,
-  salt     = canonicalUsername,
+  salt     = username,
   iterations = 600_000
 )
 ```
@@ -112,7 +112,7 @@ Rationale:
 * Online attempts are rate‑limited.
 * Matches Bitwarden’s verifier model conceptually.
 
-The server stores `verifierHash` and compares it in constant time during login.
+The server stores `loginVerifierHash` and compares it in constant time during login.
 
 ---
 
@@ -192,8 +192,6 @@ Container {
 
 Purpose: store login verifier + KDF params + wrapped `accountKey`.
 
-Fields (recommended names):
-
 Fields:
 
 - `id` (PK)
@@ -214,7 +212,7 @@ Fields:
 
 ### 2.2 `blobs` table
 
-Uniqueness: `(userId, blobName)`.
+Uniqueness: `(user_id, blob_name)`.
 
 Fields:
 
@@ -252,7 +250,7 @@ Response:
   "kdfType": "argon2id",
   "kdfIterations": 3,
   "kdfMemoryKiB": 65536,
-  "kdfParallelism": 4,
+  "kdfParallelism": 4
 }
 ```
 
@@ -268,29 +266,29 @@ Request (client‑computed values):
 {
   "username": "alice",
 
-    "kdfType": "argon2id",
-    "kdfIterations": 3,
-    "kdfMemoryKiB": 65536,
-    "kdfParallelism": 4
+  "kdfType": "argon2id",
+  "kdfIterations": 3,
+  "kdfMemoryKiB": 65536,
+  "kdfParallelism": 4,
 
-  "loginVerifier": "base64(...)" ,
+  "loginVerifier": "base64(...)",
 
-  "wrappedAccountKey": "base64(...)"
+  "wrappedAccountKey": { "nonce": "...", "ciphertext": "...", "tag": "..." }
 }
 ```
 
 Client pseudocode:
 
 ```
-
 masterSecret = KDF(password, salt=username, kdfParams)
-loginVerifier = HMAC(masterSecret, "login-verifier:v1")
-masterKey = HMAC(masterSecret, "master-key:v1")
+hkdfPrk = HKDF-Extract(salt="cryptd:hkdf:v1", ikm=masterSecret)
+loginVerifier = HKDF-Expand(prk=hkdfPrk, info="login-verifier:v1", length=32)
+masterKey = HKDF-Expand(prk=hkdfPrk, info="master-key:v1", length=32)
 
 accountKey = random(32)
 wrappedAccountKey = AES-GCM-Encrypt(
   key = masterKey,
-  aad = "cryptd:account-key:v1:user:pending",
+  aad = "cryptd:account-key:v1:user:" + username,
   plaintext = accountKey
 )
 
@@ -329,8 +327,8 @@ Request:
 Server:
 
 * Find user by username.
-* Derive login verifier hash
-* Constant‑time compare `loginVerifier` with `loginVerifierHash`.
+* Derive `loginVerifierHash`.
+* Constant‑time compare the derived hash with the stored `loginVerifierHash`.
 * On success, issue session/JWT (optional PoC) or return 200.
 
 ---
@@ -367,11 +365,11 @@ Request:
 Client flow:
 
 1. Decrypt `wrappedAccountKey` locally using old credentials to get `accountKey`.
-2. Derive new `accountKeyWrapKey` using new credentials.
+2. Derive new `masterKey` using the new credentials.
 3. Encrypt the same `accountKey` into `newWrappedAccountKey`.
 4. Send update.
 
-Server updates `users` row atomically. Only passed fields are updated. Dangerous operation. Ask user to make backup before doing this. Incorrect client implementation can brick account.
+Server updates the `users` row atomically. Only passed fields are updated. This is a dangerous operation: ask the user to make a backup before doing this. An incorrect client implementation can brick the account.
 
 ---
 
@@ -389,7 +387,7 @@ Request:
 
 ```json
 {
-  blob name = ...
+  // blobName is the path parameter
   "wrappedBlobKey": { "nonce": "...", "ciphertext": "...", "tag": "..." },
   "encryptedBlob": { "nonce": "...", "ciphertext": "...", "tag": "..." }
 }
@@ -398,18 +396,18 @@ Request:
 Client pseudocode:
 
 ```
-accountKey = AES-GCM-Decrypt(accountKeyWrapKey, wrappedAccountKey, aad="vault:account-key:...")
+accountKey = AES-GCM-Decrypt(masterKey, wrappedAccountKey, aad="cryptd:account-key:v1:user:" + username)
 
 blobKey = random(32)  // or reuse existing if doing in-place update
 wrappedBlobKey = AES-GCM-Encrypt(
   key = accountKey,
-  aad = "vault:blob-key:v1:user:"+userId+":blob:"+blobName,
+  aad = "cryptd:blob-key:v1:user:" + username + ":blob:" + blobName,
   plaintext = blobKey
 )
 
 encryptedBlob = AES-GCM-Encrypt(
   key = blobKey,
-  aad = "vault:blob:v1:user:"+userId+":blob:"+blobName,
+  aad = "cryptd:blob:v1:user:" + userId + ":blob:" + blobName,
   plaintext = blobPlaintext
 )
 
@@ -457,4 +455,3 @@ Optional upgrade:
 
   * `notes`, `journal`, `finance`, `settings`.
 
----
