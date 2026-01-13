@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  cryptd:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - cryptd-data:/data
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  cryptd-data:
+    driver: local
