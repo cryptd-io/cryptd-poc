@@ -43,6 +43,34 @@
   box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
 }
 
+.sidebar-actions {
+  padding: 12px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  gap: 8px;
+}
+
+.btn-export,
+.btn-import {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  background: white;
+  color: #555;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-export:hover,
+.btn-import:hover {
+  border-color: #667eea;
+  color: #667eea;
+  background: #f0f4ff;
+}
+
 .notes-list {
   flex: 1;
   overflow-y: auto;

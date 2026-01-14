@@ -28,6 +28,35 @@
   font-size: 1rem;
 }
 
+.diary-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.btn-export,
+.btn-import {
+  padding: 10px 20px;
+  border: 2px solid rgba(252, 182, 159, 0.5);
+  border-radius: 8px;
+  background: white;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-export:hover,
+.btn-import:hover {
+  border-color: #fcb69f;
+  color: #fcb69f;
+  background: #fff5f0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(252, 182, 159, 0.2);
+}
+
 /* New Entry Card */
 .new-entry-card {
   background: white;

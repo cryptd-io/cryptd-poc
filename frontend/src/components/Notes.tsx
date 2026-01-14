@@ -183,6 +183,77 @@ export default function Notes() {
     }
   };
 
+  const handleExport = () => {
+    try {
+      const exportData: NotesData = { notes };
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `notes-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Failed to export notes');
+    }
+  };
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const importData: NotesData = JSON.parse(text);
+        
+        if (!importData.notes || !Array.isArray(importData.notes)) {
+          throw new Error('Invalid notes data format');
+        }
+
+        // Validate data structure
+        for (const note of importData.notes) {
+          if (!note.id || !note.title || note.content === undefined || 
+              !note.createdAt || !note.updatedAt) {
+            throw new Error('Invalid note format in import file');
+          }
+        }
+
+        if (!confirm(`Import ${importData.notes.length} notes? This will replace all existing notes.`)) {
+          return;
+        }
+
+        setSaving(true);
+        setError('');
+
+        // Save imported notes (overwrites existing data)
+        await saveNotes(importData.notes);
+        setNotes(importData.notes);
+        setSelectedNote(null);
+        setTitle('');
+        setContent('');
+        setIsEditing(false);
+
+        alert(`Successfully imported ${importData.notes.length} notes!`);
+      } catch (err: any) {
+        setError(err.message || 'Failed to import notes');
+      } finally {
+        setSaving(false);
+      }
+    };
+    
+    input.click();
+  };
+
   if (loading) {
     return (
       <div className="notes-container">
@@ -198,6 +269,15 @@ export default function Notes() {
           <h2>Notes</h2>
           <button onClick={handleCreateNote} className="btn-new">
             + New
+          </button>
+        </div>
+        
+        <div className="sidebar-actions">
+          <button onClick={handleExport} className="btn-export" title="Export notes">
+            📥 Export
+          </button>
+          <button onClick={handleImport} className="btn-import" title="Import notes">
+            📤 Import
           </button>
         </div>
         

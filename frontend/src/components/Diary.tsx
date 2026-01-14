@@ -196,6 +196,78 @@ export default function Diary() {
     });
   };
 
+  const handleExport = () => {
+    try {
+      const exportData: DiaryData = { entries };
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `diary-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Failed to export diary');
+    }
+  };
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json';
+    
+    input.onchange = async (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const importData: DiaryData = JSON.parse(text);
+        
+        if (!importData.entries || !Array.isArray(importData.entries)) {
+          throw new Error('Invalid diary data format');
+        }
+
+        // Validate data structure
+        for (const entry of importData.entries) {
+          if (!entry.id || entry.content === undefined || 
+              !entry.createdAt || !entry.updatedAt) {
+            throw new Error('Invalid entry format in import file');
+          }
+        }
+
+        if (!confirm(`Import ${importData.entries.length} entries? This will replace all existing entries.`)) {
+          return;
+        }
+
+        setSaving(true);
+        setError('');
+
+        // Sort imported entries
+        const sorted = importData.entries.sort((a, b) => b.createdAt - a.createdAt);
+        
+        // Save imported entries (overwrites existing data)
+        await saveEntries(sorted);
+        setEntries(sorted);
+        setEditingId(null);
+        setEditContent('');
+
+        alert(`Successfully imported ${sorted.length} entries!`);
+      } catch (err: any) {
+        setError(err.message || 'Failed to import diary');
+      } finally {
+        setSaving(false);
+      }
+    };
+    
+    input.click();
+  };
+
   if (loading) {
     return (
       <div className="diary-container">
@@ -210,6 +282,15 @@ export default function Diary() {
         <div className="diary-header">
           <h1>📖 My Diary</h1>
           <p className="diary-subtitle">Your personal encrypted journal</p>
+        </div>
+
+        <div className="diary-actions">
+          <button onClick={handleExport} className="btn-export" title="Export diary">
+            📥 Export
+          </button>
+          <button onClick={handleImport} className="btn-import" title="Import diary">
+            📤 Import
+          </button>
         </div>
 
         {error && <div className="error-message">{error}</div>}
