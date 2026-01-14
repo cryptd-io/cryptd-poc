@@ -10,7 +10,9 @@ This document specifies a minimal design where the **server stores and serves op
 ## Threat model (summary)
 
 - **Server compromise**: attacker can read/modify user records and stored blobs. Goal: attacker cannot decrypt blob plaintext without the user password.
-- **Ciphertext substitution**: attacker can attempt to swap encrypted values across users/blobs. Goal: AEAD + AAD prevents swaps from decrypting/validating.
+- **Ciphertext substitution**: attacker can attempt to swap encrypted values across users/blobs. Goal: swapped ciphertexts do not successfully decrypt/validate under the wrong context:
+  - **Across blob names (same user)**: prevented by binding `blobName` into AEAD AAD.
+  - **Across users**: ciphertext is encrypted under a per-user `accountKey`, so a blob moved to another account will not validate/decrypt under a different user's `accountKey` (even though blob AAD does not include `username`).
 - **Network attacker**: TLS is assumed; cryptography here provides end-to-end confidentiality/integrity at rest and in transit.
 
 ## Conventions
@@ -32,7 +34,6 @@ This document specifies a minimal design where the **server stores and serves op
 | Username                      | **username**      | User-chosen identifier; stored on server.     |
 | Password-derived secret       | **masterSecret**  | Derived from password using username as salt. |
 | Account-level symmetric key   | **accountKey**    | Random 32 bytes; generated on client.         |
-| Per-blob symmetric key        | **blobKey**       | Random 32 bytes; generated per blob.          |
 | Key used to wrap accountKey   | **masterKey**     | Derived from masterSecret via HKDF.           |
 | Authentication proof material | **loginVerifier** | Derived from masterSecret via HKDF.           |
 | AEAD envelope                 | **container**     | `{ nonce, ciphertext, tag }` (AES-GCM).       |
@@ -146,33 +147,18 @@ wrappedAccountKey = AES-256-GCM-Encrypt(
 
 Purpose:
 
-- Root encryption key for all blob keys.
+- Root encryption key for all blobs.
 
 ---
 
-### 1.6 Blob keys
+### 1.6 Blobs
 
-- A new `blobKey` is generated per blob.
-- It is wrapped client-side using `accountKey` and stored on the server alongside the blob.
-
-```
-wrappedBlobKey = AES-256-GCM-Encrypt(
-  key       = accountKey,
-  aad       = "cryptd:blob-key:v1:user:" + username + ":blob:" + blobName,
-  plaintext = blobKey
-)
-```
-
----
-
-### 1.7 Blobs
-
-Blob content is encrypted using the corresponding `blobKey`.
+Blob content is encrypted directly using `accountKey`.
 
 ```
 encryptedBlob = AES-256-GCM-Encrypt(
-  key       = blobKey,
-  aad       = "cryptd:blob:v1:user:" + username + ":blob:" + blobName,
+  key       = accountKey,
+  aad       = "cryptd:blob:v1:blob:" + blobName,
   plaintext = blobData
 )
 ```
@@ -181,7 +167,7 @@ The server stores blobs as opaque encrypted containers and never decrypts them.
 
 ---
 
-### 1.8 AEAD container format
+### 1.7 AEAD container format
 
 All encrypted values use **AES-256-GCM** with this logical structure:
 
@@ -229,7 +215,6 @@ Fields (recommended):
 - `id` (PK)
 - `user_id` (FK -> users.id)
 - `blob_name` (string) — user-scoped identifier
-- `wrapped_blob_key` (container)
 - `encrypted_blob` (container)
 - `created_at`
 - `updated_at`
@@ -244,7 +229,17 @@ Principles:
 
 - The server never receives the raw password.
 - The server stores/returns only encrypted containers and verifier hashes.
-- All requests that modify/read blobs require an authenticated session (cookie or bearer token).
+- All endpoints **except** `GET /v1/auth/kdf`, `POST /v1/auth/register`, and `POST /v1/auth/verify` require authentication via a **JWT bearer token**.
+- Authenticated requests include: `Authorization: Bearer <token>`.
+
+### 3.0 End-to-end auth flow (required)
+
+Login is a two-step flow because the client must obtain server-stored KDF parameters before it can derive `masterSecret` / `loginVerifier`:
+
+1. `GET /v1/auth/kdf?username=...` → receive KDF params (public).
+2. Client derives `loginVerifier` from `username + password` using the returned KDF params.
+3. `POST /v1/auth/verify` with `{ username, loginVerifier }` → on success, receive `{ token }`.
+4. Client uses `Authorization: Bearer <token>` for all subsequent API calls (blobs, rotation, etc.).
 
 ### 3.1 Auth: fetch KDF params
 
@@ -331,16 +326,68 @@ Server behavior:
 - Find user by username.
 - Derive `loginVerifierHash`.
 - Constant-time compare derived hash vs stored `login_verifier_hash`.
-- On success, issue a session/JWT (PoC choice) or return `200`.
+- On success, issue a **JWT bearer token** to be used for all subsequent authenticated requests.
+
+Response (example):
+
+```json
+{ "token": "..." }
+```
 
 ---
 
 ### 3.4 Credential rotation
 
-Because AAD binds encrypted values to `username`, **changing `username` changes the AAD** used to decrypt historical values.
+For blobs, AAD intentionally **does not** bind to `username` (it binds to `blobName` only). This allows rotating credentials without having to download/decrypt/re-encrypt stored blobs.
+
+- This does **not** weaken cross-user substitution resistance: blobs are encrypted under a per-user `accountKey`, so ciphertext copied from one account into another will fail AEAD validation/decryption under the other user's `accountKey`.
+- Within the same account, swapping ciphertext between two different blob names still fails because AAD binds to `blobName`.
 
 - **Password rotation** (supported): re-derive `masterKey` and re-wrap the existing `accountKey`. No blob re-encryption is required.
-- **Username change** (not supported in this PoC): would require the client to download/decrypt/re-encrypt all wrapped keys and blobs under the new AAD scheme, or the system must introduce a stable server-provided identifier for AAD binding.
+- **Username change** (supported): the client decrypts the existing `accountKey` using the old `username` AAD, then re-wraps it using the new `username` AAD. Because blob AAD does not include `username`, no blob re-encryption is required.
+
+In this PoC it is acceptable to allow updating **all** fields in the user record except `id`. When changing **either** `username` or `password`, the client should update:
+
+- `username` (if changed)
+- `loginVerifier` / `login_verifier_hash` (derived from the new credentials)
+- `wrappedAccountKey` (re-wrapped under the new `masterKey` and/or new `username` AAD)
+
+#### Example: rotation request
+
+Endpoint (suggested): `PATCH /v1/users/me`
+
+Auth: existing authenticated session via **JWT bearer token** (`Authorization: Bearer <token>`).
+
+Request (client-computed values only):
+
+- `username` is optional; include it only when changing username.
+- `loginVerifier` and `wrappedAccountKey` MUST be provided whenever the password and/or username changes.
+
+**Password rotation only** (username unchanged):
+
+```json
+{
+  "loginVerifier": "base64(32 bytes)",
+  "wrappedAccountKey": { "nonce": "...", "ciphertext": "...", "tag": "..." }
+}
+```
+
+**Username + password rotation**:
+
+```json
+{
+  "username": "new-alice",
+  "loginVerifier": "base64(32 bytes)",
+  "wrappedAccountKey": { "nonce": "...", "ciphertext": "...", "tag": "..." }
+}
+```
+
+Server behavior:
+
+- Resolve user from the authenticated session.
+- If `username` is present: validate uniqueness and update it.
+- Hash and store the new verifier (`login_verifier_hash`).
+- Store the new `wrapped_account_key`.
 
 ---
 
@@ -348,7 +395,7 @@ Because AAD binds encrypted values to `username`, **changing `username` changes 
 
 Auth for PoC:
 
-- Simplest: a session/JWT returned by `/v1/auth/verify`.
+- Required: JWT bearer token returned by `/v1/auth/verify` (`Authorization: Bearer <token>`).
 
 ### 4.1 Upsert blob
 
@@ -358,7 +405,6 @@ Request:
 
 ```json
 {
-  "wrappedBlobKey": { "nonce": "...", "ciphertext": "...", "tag": "..." },
   "encryptedBlob": { "nonce": "...", "ciphertext": "...", "tag": "..." }
 }
 ```
@@ -372,20 +418,13 @@ accountKey = AES-GCM-Decrypt(
   aad = "cryptd:account-key:v1:user:" + username
 )
 
-blobKey = random(32)  // or reuse existing if doing in-place update
-wrappedBlobKey = AES-GCM-Encrypt(
-  key       = accountKey,
-  aad       = "cryptd:blob-key:v1:user:" + username + ":blob:" + blobName,
-  plaintext = blobKey
-)
-
 encryptedBlob = AES-GCM-Encrypt(
-  key       = blobKey,
-  aad       = "cryptd:blob:v1:user:" + username + ":blob:" + blobName,
+  key       = accountKey,
+  aad       = "cryptd:blob:v1:blob:" + blobName,
   plaintext = blobPlaintext
 )
 
-send(wrappedBlobKey, encryptedBlob)
+send(encryptedBlob)
 ```
 
 Server behavior:
@@ -400,9 +439,7 @@ Server behavior:
 
 `GET /v1/blobs/{blobName}` returns:
 
-- `wrappedBlobKey`
 - `encryptedBlob`
-- `schemaVersion` (optional, for client-side migrations)
 
 ---
 
@@ -410,7 +447,7 @@ Server behavior:
 
 `GET /v1/blobs` returns:
 
-- `{ blobName, schemaVersion, updatedAt, encryptedSize }[]`
+- `{ blobName, updatedAt, encryptedSize }[]`
 
 ---
 
