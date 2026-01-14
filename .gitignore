@@ -1,9 +1,43 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
 bin/
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
-.env
-.DS_Store
 coverage.out
 coverage.html
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Node (for frontend)
+node_modules/
+dist/
+.cache/
+
+# Logs
+*.log
+
+# Build artifacts
+build/
+tmp/

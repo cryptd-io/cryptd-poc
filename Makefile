@@ -1,67 +1,75 @@
-.PHONY: all build test run clean help
+.PHONY: help build test test-unit test-integration run clean docker-build docker-up docker-down
 
 # Default target
-all: test build
+help:
+	@echo "Available targets:"
+	@echo "  build              - Build the server binary"
+	@echo "  test               - Run all tests"
+	@echo "  test-unit          - Run unit tests only"
+	@echo "  test-integration   - Run integration tests only"
+	@echo "  test-coverage      - Run tests with coverage report"
+	@echo "  run                - Run the server locally"
+	@echo "  clean              - Clean build artifacts"
+	@echo "  docker-build       - Build Docker image"
+	@echo "  docker-up          - Start services with docker-compose"
+	@echo "  docker-down        - Stop services"
+	@echo "  lint               - Run golangci-lint"
 
-# Build the server
+# Build the backend server
 build:
-	@echo "Building cryptd-server..."
-	@go build -o bin/cryptd-server
+	cd backend && go build -o bin/cryptd-server ./cmd/server
 
-# Run tests
+# Run all tests
 test:
-	@echo "Running tests..."
-	@go test -v ./...
+	cd backend && go test -v ./...
 
-# Run the server
-run: build
-	@echo "Starting server on :8080..."
-	@./bin/cryptd-server
+# Run unit tests only
+test-unit:
+	cd backend && go test -v ./internal/...
 
-# Run with custom settings
-run-custom:
-	@echo "Starting server with custom settings..."
-	@./bin/cryptd-server -addr :9000 -db custom.db
-
-# Clean build artifacts
-clean:
-	@echo "Cleaning build artifacts..."
-	@rm -rf bin/
-	@rm -f *.db *.db-journal *.db-shm *.db-wal
+# Run integration tests only
+test-integration:
+	cd backend && go test -v ./tests/...
 
 # Run tests with coverage
 test-coverage:
-	@echo "Running tests with coverage..."
-	@go test -coverprofile=coverage.out ./...
-	@go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+	cd backend && go test -coverprofile=coverage.out ./...
+	cd backend && go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: backend/coverage.html"
 
-# Format code
-fmt:
-	@echo "Formatting code..."
-	@go fmt ./...
+# Run the server locally (requires JWT_SECRET env var)
+run:
+	@if [ -z "$(JWT_SECRET)" ]; then \
+		echo "Error: JWT_SECRET environment variable is required"; \
+		echo "Example: JWT_SECRET=my-secret make run"; \
+		exit 1; \
+	fi
+	cd backend && go run ./cmd/server -jwt-secret $(JWT_SECRET)
 
-# Run linter
+# Clean build artifacts
+clean:
+	cd backend && rm -rf bin/ coverage.out coverage.html cryptd.db
+	rm -rf frontend/node_modules frontend/dist
+
+# Build Docker image
+docker-build:
+	docker-compose build
+
+# Start services with docker-compose
+docker-up:
+	@if [ -z "$(JWT_SECRET)" ]; then \
+		echo "Warning: JWT_SECRET not set, using default (insecure)"; \
+	fi
+	docker-compose up -d
+
+# Stop services
+docker-down:
+	docker-compose down
+
+# Lint backend code (requires golangci-lint)
 lint:
-	@echo "Running linter..."
-	@golangci-lint run ./...
+	cd backend && golangci-lint run
 
-# Download dependencies
-deps:
-	@echo "Downloading dependencies..."
-	@go mod download
-	@go mod tidy
-
-# Help
-help:
-	@echo "Cryptd PoC - Available targets:"
-	@echo "  make build         - Build the server binary"
-	@echo "  make test          - Run tests"
-	@echo "  make run           - Build and run server on :8080"
-	@echo "  make run-custom    - Run server with custom settings"
-	@echo "  make clean         - Remove build artifacts and databases"
-	@echo "  make test-coverage - Run tests with coverage report"
-	@echo "  make fmt           - Format code"
-	@echo "  make lint          - Run linter"
-	@echo "  make deps          - Download dependencies"
-	@echo "  make help          - Show this help message"
+# Install development tools
+dev-tools:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
