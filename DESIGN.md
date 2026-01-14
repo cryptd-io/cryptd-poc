@@ -1,26 +1,61 @@
 # cryptd — Encrypted Blob Vault (PoC) — Design
 
-This document specifies a minimal design where the **server stores and serves opaque encrypted blobs**, and the **client (SPA) owns all plaintext and keys**.
+This document describes a minimal end-to-end encryption design where the **server stores and serves opaque encrypted blobs**, and the **client (SPA) owns all plaintext and keys**.
 
-## Scope
+---
 
-- **In scope**: client-side encryption, blob wrapping/envelopes, minimal auth verifier, basic CRUD API for encrypted blobs.
-- **Out of scope**: multi-device key sharing, account recovery, hardware-backed keys, advanced protocol hardening, client compromise protection.
+## 0. Overview
 
-## Threat model (summary)
+### 0.1 Goals
 
-- **Server compromise**: attacker can read/modify user records and stored blobs. Goal: attacker cannot decrypt blob plaintext without the user password.
-- **Ciphertext substitution**: attacker can attempt to swap encrypted values across users/blobs. Goal: swapped ciphertexts do not successfully decrypt/validate under the wrong context:
+- The server can **store** and **return** user data but cannot decrypt it.
+- The client performs all cryptographic operations and handles all key material.
+- Simple authentication based on a client-derived `loginVerifier`.
+- Minimal CRUD API for encrypted blobs.
+- Resistance to ciphertext substitution across blob names and across users.
+
+### 0.2 Non-goals (PoC)
+
+- Multi-device key sharing
+- Account recovery
+- Hardware-backed keys
+- Advanced protocol hardening
+- Protection against a compromised client
+
+### 0.3 Threat model (summary)
+
+- **Server compromise**: an attacker may read/modify user records and stored blobs. Goal: attacker cannot decrypt blob plaintext without the user password.
+- **Ciphertext substitution**: an attacker may attempt to swap encrypted values across users/blobs. Goal: swapped ciphertexts do not successfully decrypt/validate under the wrong context:
   - **Across blob names (same user)**: prevented by binding `blobName` into AEAD AAD.
   - **Across users**: ciphertext is encrypted under a per-user `accountKey`, so a blob moved to another account will not validate/decrypt under a different user's `accountKey` (even though blob AAD does not include `username`).
 - **Network attacker**: TLS is assumed; cryptography here provides end-to-end confidentiality/integrity at rest and in transit.
 
-## Conventions
+### 0.4 Conventions and invariants
 
-- **Client identifiers**: the client uses **`username` only**. The client does not rely on a server-internal `user_id`.
+- **Client identifier**: the client uses **`username` only**. The client does not rely on a server-internal `user_id`.
 - **Encoding**: all binary values in JSON are **base64**.
-- **Nonce**: AES-GCM nonce is **96 bits (12 bytes)**, randomly generated per encryption.
-- **AAD**: AAD is always supplied and is a UTF-8 string in a stable namespace: `cryptd:<purpose>:v1:...`.
+- **AES-GCM nonce**: **96 bits (12 bytes)**, randomly generated per encryption.
+- **AAD**: always supplied; UTF-8 strings in a stable namespace: `cryptd:<purpose>:v1:...`.
+
+### 0.5 High-level flow (at a glance)
+
+```
+username + password
+   |
+   v
+masterSecret  --HKDF-->  loginVerifier  (auth proof)
+   |
+   '--HKDF-->  masterKey (wrap/unwrap accountKey)
+                   |
+                   v
+          wrappedAccountKey (stored on server)
+                   |
+                   v
+               accountKey (root key for blobs)
+                   |
+                   v
+             encryptedBlob (stored on server)
+```
 
 ---
 
@@ -204,8 +239,6 @@ Fields (recommended):
 - `created_at`
 - `updated_at`
 
----
-
 ### 2.2 `blobs` table
 
 Uniqueness: `(user_id, blob_name)`.
@@ -232,7 +265,9 @@ Principles:
 - All endpoints **except** `GET /v1/auth/kdf`, `POST /v1/auth/register`, and `POST /v1/auth/verify` require authentication via a **JWT bearer token**.
 - Authenticated requests include: `Authorization: Bearer <token>`.
 
-### 3.0 End-to-end auth flow (required)
+---
+
+### 3.0 End-to-end authentication flow (required)
 
 Login is a two-step flow because the client must obtain server-stored KDF parameters before it can derive `masterSecret` / `loginVerifier`:
 
@@ -240,6 +275,8 @@ Login is a two-step flow because the client must obtain server-stored KDF parame
 2. Client derives `loginVerifier` from `username + password` using the returned KDF params.
 3. `POST /v1/auth/verify` with `{ username, loginVerifier }` → on success, receive `{ token }`.
 4. Client uses `Authorization: Bearer <token>` for all subsequent API calls (blobs, rotation, etc.).
+
+---
 
 ### 3.1 Auth: fetch KDF params
 
@@ -352,7 +389,7 @@ In this PoC it is acceptable to allow updating **all** fields in the user record
 - `loginVerifier` / `login_verifier_hash` (derived from the new credentials)
 - `wrappedAccountKey` (re-wrapped under the new `masterKey` and/or new `username` AAD)
 
-#### Example: rotation request
+#### 3.4.1 Example: rotation request
 
 Endpoint (suggested): `PATCH /v1/users/me`
 
@@ -470,3 +507,29 @@ Server behavior:
 
 - Separate blobs per domain to reduce rewrite size and merge conflicts:
   - `notes`, `journal`, `finance`, `settings`.
+
+---
+
+## 6. Design Rationale & Security Analysis
+
+This section documents intentional trade-offs and preemptively addresses common critiques for this PoC.
+
+### 6.1 Salt selection (`username` vs. random salt)
+
+Decision: the system uses `username` as the KDF salt.
+
+Analysis: while industry standards typically mandate random 16-byte salts to prevent pre-computation (rainbow table) attacks, we accept this trade-off for the following reasons:
+
+- **Targeted security**: for an attacker targeting a specific user on a specific instance, the computational cost to brute-force the password is mathematically identical regardless of whether the salt is random or the `username`.
+- **Scale**: “global” pre-computation attacks are unlikely for a self-hosted/small-scale deployment.
+- **Renaming strategy**: the concern that “changing a username changes the salt (and thus the key)” is mitigated by the key-wrapping architecture. A username change only requires re-wrapping `accountKey` (an \(O(1)\) operation), not re-encrypting the data.
+
+### 6.2 Key hierarchy simplification (no per-blob keys)
+
+Decision: blob data is encrypted directly with `accountKey`, without adding a unique per-blob key layer.
+
+Analysis:
+
+- **Collision resistance**: with AES-GCM and 96-bit random nonces, the probability of a nonce collision using a single key is negligible until very large numbers of encryptions (e.g., \(p \approx 10^{-15}\) for typical vault sizes).
+- **Performance vs. granularity**: this flattening reduces storage overhead and encryption latency. The loss of “granular file sharing” capabilities is acceptable because it falls outside the scope of a personal vault.
+- **Future proofing**: if granular sharing is required later, the system can transparently migrate by treating `accountKey` as a wrapping key for new entries.
