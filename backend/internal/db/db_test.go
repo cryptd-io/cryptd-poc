@@ -27,12 +27,12 @@ func TestCreateUser(t *testing.T) {
 	parallelism := 4
 
 	user := &models.User{
-		Username:            "alice",
-		KDFType:             models.KDFTypeArgon2id,
-		KDFIterations:       3,
-		KDFMemoryKiB:        &memKiB,
-		KDFParallelism:      &parallelism,
-		LoginVerifierHash:   []byte("test-hash"),
+		Username:          "alice",
+		KDFType:           models.KDFTypeArgon2id,
+		KDFIterations:     3,
+		KDFMemoryKiB:      &memKiB,
+		KDFParallelism:    &parallelism,
+		LoginVerifierHash: []byte("test-hash"),
 		WrappedAccountKey: models.Container{
 			Nonce:      "nonce123",
 			Ciphertext: "ciphertext123",
@@ -105,12 +105,12 @@ func TestGetUserByUsername(t *testing.T) {
 	parallelism := 4
 
 	original := &models.User{
-		Username:            "alice",
-		KDFType:             models.KDFTypeArgon2id,
-		KDFIterations:       3,
-		KDFMemoryKiB:        &memKiB,
-		KDFParallelism:      &parallelism,
-		LoginVerifierHash:   []byte("test-hash"),
+		Username:          "alice",
+		KDFType:           models.KDFTypeArgon2id,
+		KDFIterations:     3,
+		KDFMemoryKiB:      &memKiB,
+		KDFParallelism:    &parallelism,
+		LoginVerifierHash: []byte("test-hash"),
 		WrappedAccountKey: models.Container{
 			Nonce:      "nonce123",
 			Ciphertext: "ciphertext123",
