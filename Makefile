@@ -1,75 +1,104 @@
-.PHONY: help build test test-unit test-integration run clean docker-build docker-up docker-down
+# cryptd Makefile
+# Convenience commands for development
 
-# Default target
-help:
-	@echo "Available targets:"
-	@echo "  build              - Build the server binary"
-	@echo "  test               - Run all tests"
-	@echo "  test-unit          - Run unit tests only"
-	@echo "  test-integration   - Run integration tests only"
-	@echo "  test-coverage      - Run tests with coverage report"
-	@echo "  run                - Run the server locally"
-	@echo "  clean              - Clean build artifacts"
-	@echo "  docker-build       - Build Docker image"
-	@echo "  docker-up          - Start services with docker-compose"
-	@echo "  docker-down        - Stop services"
-	@echo "  lint               - Run golangci-lint"
+.PHONY: help backend-test backend-run backend-build frontend-dev frontend-build frontend-install dev clean
 
-# Build the backend server
-build:
-	cd backend && go build -o bin/cryptd-server ./cmd/server
+help: ## Show this help message
+	@echo "cryptd - Encrypted Blob Vault"
+	@echo ""
+	@echo "Available commands:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# Run all tests
-test:
-	cd backend && go test -v ./...
+# Backend commands
+backend-test: ## Run backend tests
+	cd backend && go test ./... -v -cover
 
-# Run unit tests only
-test-unit:
-	cd backend && go test -v ./internal/...
-
-# Run integration tests only
-test-integration:
-	cd backend && go test -v ./tests/...
-
-# Run tests with coverage
-test-coverage:
-	cd backend && go test -coverprofile=coverage.out ./...
-	cd backend && go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: backend/coverage.html"
-
-# Run the server locally (requires JWT_SECRET env var)
-run:
-	@if [ -z "$(JWT_SECRET)" ]; then \
-		echo "Error: JWT_SECRET environment variable is required"; \
-		echo "Example: JWT_SECRET=my-secret make run"; \
-		exit 1; \
-	fi
+backend-run: ## Run backend server (requires JWT_SECRET env var)
 	cd backend && go run ./cmd/server -jwt-secret $(JWT_SECRET)
 
-# Clean build artifacts
-clean:
-	cd backend && rm -rf bin/ coverage.out coverage.html cryptd.db
-	rm -rf frontend/node_modules frontend/dist
+backend-build: ## Build backend binary
+	cd backend && go build -o bin/cryptd-server ./cmd/server
 
-# Build Docker image
-docker-build:
-	docker-compose build
+# Frontend commands
+frontend-install: ## Install frontend dependencies
+	cd frontend && npm install
 
-# Start services with docker-compose
-docker-up:
-	@if [ -z "$(JWT_SECRET)" ]; then \
-		echo "Warning: JWT_SECRET not set, using default (insecure)"; \
-	fi
+frontend-dev: ## Run frontend dev server
+	cd frontend && npm run dev
+
+frontend-build: ## Build frontend for production
+	cd frontend && npm run build
+
+frontend-preview: ## Preview production build
+	cd frontend && npm run preview
+
+# Combined commands
+dev: ## Run both backend and frontend in parallel (requires JWT_SECRET)
+	@echo "Starting backend and frontend..."
+	@echo "Backend: http://localhost:8080"
+	@echo "Frontend: http://localhost:5173"
+	@$(MAKE) -j2 backend-run frontend-dev
+
+install: ## Install all dependencies (backend + frontend)
+	@echo "Installing backend dependencies..."
+	cd backend && go mod download
+	@echo "Installing frontend dependencies..."
+	cd frontend && npm install
+	@echo "✅ All dependencies installed"
+
+test: ## Run all tests
+	@echo "Running backend tests..."
+	cd backend && go test ./... -v
+	@echo "✅ All tests passed"
+
+build: ## Build backend and frontend
+	@echo "Building backend..."
+	cd backend && go build -o bin/cryptd-server ./cmd/server
+	@echo "Building frontend..."
+	cd frontend && npm run build
+	@echo "✅ Build complete"
+
+clean: ## Clean build artifacts
+	cd backend && rm -rf bin/ *.db coverage.out coverage.html
+	cd frontend && rm -rf dist/ node_modules/
+	@echo "✅ Cleaned"
+
+# Docker commands
+docker-up: ## Start services with docker-compose
 	docker-compose up -d
 
-# Stop services
-docker-down:
+docker-down: ## Stop docker-compose services
 	docker-compose down
 
-# Lint backend code (requires golangci-lint)
-lint:
-	cd backend && golangci-lint run
+docker-logs: ## View docker-compose logs
+	docker-compose logs -f
 
-# Install development tools
-dev-tools:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+docker-logs-backend: ## View backend logs only
+	docker-compose logs -f backend
+
+docker-logs-frontend: ## View frontend logs only
+	docker-compose logs -f frontend
+
+docker-build: ## Rebuild docker images
+	docker-compose build
+
+docker-restart: ## Restart all services
+	docker-compose restart
+
+docker-clean: ## Stop and remove all containers, volumes, and images
+	docker-compose down -v
+	docker system prune -f
+
+# Quick start
+quickstart: install ## Quick start: install deps and show instructions
+	@echo ""
+	@echo "✅ Setup complete!"
+	@echo ""
+	@echo "To start developing:"
+	@echo "  1. Set JWT secret: export JWT_SECRET=\"test-secret\""
+	@echo "  2. Run: make dev"
+	@echo ""
+	@echo "Or start services separately:"
+	@echo "  - Backend: make backend-run"
+	@echo "  - Frontend: make frontend-dev"
+	@echo ""

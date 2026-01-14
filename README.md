@@ -15,7 +15,11 @@ cryptd-poc/
 │   │   ├── middleware/ # JWT authentication
 │   │   └── models/   # Data models
 │   └── tests/        # Integration tests
-├── frontend/         # React/Vite frontend (TODO)
+├── frontend/         # React/Vite frontend (TypeScript)
+│   ├── src/
+│   │   ├── lib/      # Crypto, API, and auth utilities
+│   │   └── components/ # React components (Auth, Notes, Diary)
+│   └── README.md     # Frontend-specific documentation
 ├── DESIGN.md         # Detailed design specification
 ├── Makefile          # Common development tasks
 └── docker-compose.yml # Docker deployment
@@ -43,53 +47,96 @@ cryptd-poc/
 
 ### Prerequisites
 - Go 1.21+ (for backend)
+- Node.js 18+ (for frontend)
 - Docker & Docker Compose (optional, for containerized deployment)
 - Make (optional, for convenience commands)
 
-### Option 1: Local Development
+### Option 1: Local Development (Backend + Frontend)
 
-1. **Set JWT Secret** (required):
+1. **Set JWT Secret** (required for backend):
    ```bash
    export JWT_SECRET="your-secure-random-secret-here"
    ```
 
-2. **Build and run tests**:
+2. **Start the backend**:
    ```bash
-   make test
-   ```
-
-3. **Run the server**:
-   ```bash
-   make run
+   make backend-run
    # or manually:
    cd backend && go run ./cmd/server -jwt-secret $JWT_SECRET
    ```
 
-The server will start on http://localhost:8080
+   The backend will start on http://localhost:8080
 
-### Option 2: Docker Deployment
+3. **In a new terminal, start the frontend**:
+   ```bash
+   make frontend-dev
+   # or manually:
+   cd frontend && npm install && npm run dev
+   ```
+
+   The frontend will start on http://localhost:5173
+
+4. **Open your browser**:
+   Navigate to http://localhost:5173 and register a new account!
+
+### Option 2: Docker Deployment (Recommended for Production)
 
 1. **Set JWT Secret** (optional, or use default):
    ```bash
    export JWT_SECRET="your-secure-random-secret-here"
    ```
 
-2. **Start with docker-compose**:
+2. **Start all services with docker-compose**:
    ```bash
    make docker-up
    # or manually:
    docker-compose up -d
    ```
 
+   This will start:
+   - **Backend** on http://localhost:8080
+   - **Frontend** on http://localhost (port 80)
+
 3. **Check logs**:
    ```bash
-   docker-compose logs -f backend
+   # All services
+   make docker-logs
+   
+   # Backend only
+   make docker-logs-backend
+   
+   # Frontend only
+   make docker-logs-frontend
    ```
 
-4. **Stop services**:
+4. **Open your browser**:
+   Navigate to **http://localhost**
+
+5. **Stop services**:
    ```bash
    make docker-down
    ```
+
+> **Note**: The frontend Nginx server proxies API requests (`/v1/*`) to the backend automatically. No CORS configuration needed!
+
+## Frontend Applications
+
+The frontend includes two mini-apps that demonstrate end-to-end encryption:
+
+### 📝 Notes App
+- Create, edit, and delete notes
+- Each note has a title and content
+- List view with previews and search
+- All data encrypted in `notes` blob
+
+### 📖 Diary App  
+- Personal journal with feed-style display
+- Create, edit, and delete diary entries
+- Chronological timeline (newest first)
+- Relative timestamps ("2 hours ago")
+- All data encrypted in `diary` blob
+
+**Key Feature**: Each app stores data in its own blob, so they're completely independent!
 
 ## API Endpoints
 
