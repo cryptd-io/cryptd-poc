@@ -26,7 +26,7 @@ func setupTestServer(t *testing.T) (*Server, *db.DB) {
 
 func TestGetKDFParams(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create a test user
 	memKiB := 65536
@@ -76,7 +76,7 @@ func TestGetKDFParams(t *testing.T) {
 
 func TestGetKDFParamsUserNotFound(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	req := httptest.NewRequest("GET", "/v1/auth/kdf?username=nonexistent", nil)
 	w := httptest.NewRecorder()
@@ -90,7 +90,7 @@ func TestGetKDFParamsUserNotFound(t *testing.T) {
 
 func TestGetKDFParamsMissingUsername(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	req := httptest.NewRequest("GET", "/v1/auth/kdf", nil)
 	w := httptest.NewRecorder()
@@ -104,7 +104,7 @@ func TestGetKDFParamsMissingUsername(t *testing.T) {
 
 func TestRegister(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Prepare request
 	memKiB := 65536
@@ -146,7 +146,7 @@ func TestRegister(t *testing.T) {
 
 func TestRegisterDuplicateUsername(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create first user
 	memKiB := 65536
@@ -188,7 +188,7 @@ func TestRegisterDuplicateUsername(t *testing.T) {
 
 func TestRegisterInvalidKDFParams(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	req := RegisterRequest{
 		Username:      "alice",
@@ -215,7 +215,7 @@ func TestRegisterInvalidKDFParams(t *testing.T) {
 
 func TestVerify(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create user with known credentials
 	password := "test-password"
@@ -285,7 +285,7 @@ func TestVerify(t *testing.T) {
 
 func TestVerifyInvalidCredentials(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create user
 	memKiB := 65536
@@ -315,7 +315,7 @@ func TestVerifyInvalidCredentials(t *testing.T) {
 		},
 	}
 
-	database.CreateUser(user)
+	_ = database.CreateUser(user)
 
 	// Try with wrong password
 	wrongSecret, _ := crypto.DerivePasswordSecret("wrong-password", "alice", params)
@@ -339,7 +339,7 @@ func TestVerifyInvalidCredentials(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create user
 	memKiB := 65536
@@ -358,7 +358,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 	}
 
-	database.CreateUser(user)
+	_ = database.CreateUser(user)
 
 	// Generate token
 	token, _ := server.jwtConfig.GenerateToken(user.ID)
@@ -401,7 +401,7 @@ func TestUpdateUser(t *testing.T) {
 
 func TestUpsertBlob(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create user
 	user := &models.User{
@@ -415,7 +415,7 @@ func TestUpsertBlob(t *testing.T) {
 			Tag:        "tag",
 		},
 	}
-	database.CreateUser(user)
+	_ = database.CreateUser(user)
 
 	// Generate token
 	token, _ := server.jwtConfig.GenerateToken(user.ID)
@@ -454,7 +454,7 @@ func TestUpsertBlob(t *testing.T) {
 
 func TestGetBlob(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create user and blob
 	user := &models.User{
@@ -468,7 +468,7 @@ func TestGetBlob(t *testing.T) {
 			Tag:        "tag",
 		},
 	}
-	database.CreateUser(user)
+	_ = database.CreateUser(user)
 
 	blob := &models.Blob{
 		UserID:   user.ID,
@@ -476,10 +476,10 @@ func TestGetBlob(t *testing.T) {
 		EncryptedBlob: models.Container{
 			Nonce:      "blob-nonce",
 			Ciphertext: "blob-ciphertext",
-			Tag:        "blob-tag",
-		},
-	}
-	database.UpsertBlob(blob)
+		Tag:        "blob-tag",
+	},
+}
+	_ = database.UpsertBlob(blob)
 
 	// Generate token and get blob
 	token, _ := server.jwtConfig.GenerateToken(user.ID)
@@ -496,7 +496,7 @@ func TestGetBlob(t *testing.T) {
 	}
 
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
+	_ = json.NewDecoder(w.Body).Decode(&resp)
 
 	encBlob := resp["encryptedBlob"].(map[string]interface{})
 	if encBlob["ciphertext"] != "blob-ciphertext" {
@@ -506,7 +506,7 @@ func TestGetBlob(t *testing.T) {
 
 func TestListBlobs(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create user and blobs
 	user := &models.User{
@@ -517,10 +517,10 @@ func TestListBlobs(t *testing.T) {
 		WrappedAccountKey: models.Container{
 			Nonce:      "nonce",
 			Ciphertext: "ciphertext",
-			Tag:        "tag",
-		},
-	}
-	database.CreateUser(user)
+		Tag:        "tag",
+	},
+}
+	_ = database.CreateUser(user)
 
 	blobs := []string{"vault", "notes", "journal"}
 	for _, name := range blobs {
@@ -530,10 +530,10 @@ func TestListBlobs(t *testing.T) {
 			EncryptedBlob: models.Container{
 				Nonce:      "nonce-" + name,
 				Ciphertext: "Y2lwaGVydGV4dC0=",
-				Tag:        "tag-" + name,
-			},
-		}
-		database.UpsertBlob(blob)
+			Tag:        "tag-" + name,
+		},
+	}
+		_ = database.UpsertBlob(blob)
 	}
 
 	// Generate token and list blobs
@@ -551,7 +551,7 @@ func TestListBlobs(t *testing.T) {
 	}
 
 	var list []models.BlobListItem
-	json.NewDecoder(w.Body).Decode(&list)
+	_ = json.NewDecoder(w.Body).Decode(&list)
 
 	if len(list) != 3 {
 		t.Errorf("expected 3 blobs, got %d", len(list))
@@ -560,7 +560,7 @@ func TestListBlobs(t *testing.T) {
 
 func TestDeleteBlob(t *testing.T) {
 	server, database := setupTestServer(t)
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	// Create user and blob
 	user := &models.User{
@@ -574,7 +574,7 @@ func TestDeleteBlob(t *testing.T) {
 			Tag:        "tag",
 		},
 	}
-	database.CreateUser(user)
+	_ = database.CreateUser(user)
 
 	blob := &models.Blob{
 		UserID:   user.ID,
@@ -582,10 +582,10 @@ func TestDeleteBlob(t *testing.T) {
 		EncryptedBlob: models.Container{
 			Nonce:      "nonce",
 			Ciphertext: "ciphertext",
-			Tag:        "tag",
-		},
-	}
-	database.UpsertBlob(blob)
+		Tag:        "tag",
+	},
+}
+	_ = database.UpsertBlob(blob)
 
 	// Generate token and delete blob
 	token, _ := server.jwtConfig.GenerateToken(user.ID)

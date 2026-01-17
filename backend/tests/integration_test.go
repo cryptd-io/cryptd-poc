@@ -22,7 +22,7 @@ func TestFullAuthFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create database: %v", err)
 	}
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	server := api.NewServer(database, "test-jwt-secret")
 	router := server.NewRouter()
@@ -218,14 +218,14 @@ func TestFullAuthFlow(t *testing.T) {
 
 			router.ServeHTTP(w, req)
 
-			if w.Code != http.StatusOK {
-				t.Fatalf("failed to get blob: status %d", w.Code)
-			}
+		if w.Code != http.StatusOK {
+			t.Fatalf("failed to get blob: status %d", w.Code)
+		}
 
-			var resp map[string]interface{}
-			json.NewDecoder(w.Body).Decode(&resp)
+		var resp map[string]interface{}
+		_ = json.NewDecoder(w.Body).Decode(&resp)
 
-			if _, ok := resp["encryptedBlob"]; !ok {
+		if _, ok := resp["encryptedBlob"]; !ok {
 				t.Error("expected encryptedBlob in response")
 			}
 
@@ -294,7 +294,7 @@ func TestCredentialRotation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create database: %v", err)
 	}
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	server := api.NewServer(database, "test-jwt-secret")
 	router := server.NewRouter()
@@ -353,7 +353,7 @@ func TestCredentialRotation(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var verifyResp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&verifyResp)
+	_ = json.NewDecoder(w.Body).Decode(&verifyResp)
 	token := verifyResp["token"].(string)
 
 	// Rotate credentials
@@ -436,7 +436,7 @@ func TestMultipleUsersIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create database: %v", err)
 	}
-	defer database.Close()
+	defer func() { _ = database.Close() }()
 
 	server := api.NewServer(database, "test-jwt-secret")
 	router := server.NewRouter()
@@ -488,7 +488,7 @@ func TestMultipleUsersIsolation(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		var verifyResp map[string]interface{}
-		json.NewDecoder(w.Body).Decode(&verifyResp)
+		_ = json.NewDecoder(w.Body).Decode(&verifyResp)
 		return verifyResp["token"].(string)
 	}
 

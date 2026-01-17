@@ -21,7 +21,7 @@ func setupTestDB(t *testing.T) *DB {
 
 func TestCreateUser(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	memKiB := 65536
 	parallelism := 4
@@ -60,7 +60,7 @@ func TestCreateUser(t *testing.T) {
 
 func TestCreateUserDuplicate(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user1 := &models.User{
 		Username:          "alice",
@@ -99,7 +99,7 @@ func TestCreateUserDuplicate(t *testing.T) {
 
 func TestGetUserByUsername(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	memKiB := 65536
 	parallelism := 4
@@ -147,7 +147,7 @@ func TestGetUserByUsername(t *testing.T) {
 
 func TestGetUserByUsernameNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	_, err := db.GetUserByUsername("nonexistent")
 	if err != ErrUserNotFound {
@@ -157,7 +157,7 @@ func TestGetUserByUsernameNotFound(t *testing.T) {
 
 func TestGetUserByID(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user := &models.User{
 		Username:          "alice",
@@ -188,7 +188,7 @@ func TestGetUserByID(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user := &models.User{
 		Username:          "alice",
@@ -238,7 +238,7 @@ func TestUpdateUser(t *testing.T) {
 
 func TestUpsertBlob(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Create user first
 	user := &models.User{
@@ -298,7 +298,7 @@ func TestUpsertBlob(t *testing.T) {
 
 func TestGetBlob(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user := &models.User{
 		Username:          "alice",
@@ -348,7 +348,7 @@ func TestGetBlob(t *testing.T) {
 
 func TestGetBlobNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user := &models.User{
 		Username:          "alice",
@@ -375,7 +375,7 @@ func TestGetBlobNotFound(t *testing.T) {
 
 func TestListBlobs(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user := &models.User{
 		Username:          "alice",
@@ -435,7 +435,7 @@ func TestListBlobs(t *testing.T) {
 
 func TestDeleteBlob(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user := &models.User{
 		Username:          "alice",
@@ -484,7 +484,7 @@ func TestDeleteBlob(t *testing.T) {
 
 func TestDeleteBlobNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	user := &models.User{
 		Username:          "alice",

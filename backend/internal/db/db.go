@@ -32,13 +32,13 @@ func New(dataSourceName string) (*DB, error) {
 
 	// Enable foreign keys
 	if _, err := conn.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
 	// Initialize schema
 	if _, err := conn.Exec(schema); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, fmt.Errorf("failed to initialize schema: %w", err)
 	}
 
@@ -301,7 +301,7 @@ func (db *DB) ListBlobs(userID int64) ([]models.BlobListItem, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list blobs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var blobs []models.BlobListItem
 	for rows.Next() {
