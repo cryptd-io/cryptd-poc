@@ -14,9 +14,6 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build argument for API base URL
-ARG VITE_API_BASE
-ENV VITE_API_BASE=${VITE_API_BASE}
 
 # Build for production
 RUN npm run build
@@ -30,6 +27,13 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Copy docker entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Environment variable for runtime API base URL configuration
+ENV API_BASE_URL=http://localhost:8080
+
 # Expose port 80
 EXPOSE 80
 
@@ -37,5 +41,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Use custom entrypoint that generates config.js from env vars
+ENTRYPOINT ["/docker-entrypoint.sh"]
