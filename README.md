@@ -326,11 +326,20 @@ make clean
   Default: localhost origins for development
 
 #### Web
-- `VITE_API_BASE` (optional): Server API URL (set at build time)
+- `API_BASE_URL` (optional): Server API URL (set at **runtime** for Docker containers)
   ```bash
-  export VITE_API_BASE="https://api.example.com"
+  export API_BASE_URL="https://api.example.com"
+  docker-compose up
   ```
   Default: `http://localhost:8080`
+  
+- `VITE_API_BASE` (optional): Server API URL (set at **build time** as fallback)
+  ```bash
+  export VITE_API_BASE="https://api.example.com"
+  npm run build
+  ```
+
+**Note**: The web frontend now supports runtime configuration! You can deploy the same Docker image to different environments with different API URLs. See [web/CONFIG.md](web/CONFIG.md) for detailed configuration options.
 
 ### Command-line Flags
 

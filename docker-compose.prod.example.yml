@@ -28,6 +28,9 @@ services:
     ports:
       - "80:80"
       - "443:443"  # If using HTTPS with custom nginx config
+    environment:
+      # Runtime API base URL configuration - set this to your server's public URL
+      - API_BASE_URL=${API_BASE_URL:-http://localhost:8080}
     depends_on:
       - server
     restart: unless-stopped
@@ -55,8 +58,16 @@ networks:
 # Instructions:
 # 1. Copy this file to docker-compose.prod.yml
 # 2. Replace <owner>/<repo> with your GitHub username/organization and repository name
-# 3. Create a .env file with JWT_SECRET and CORS_ALLOWED_ORIGINS
+# 3. Create a .env file with:
+#    - JWT_SECRET (required)
+#    - CORS_ALLOWED_ORIGINS (server CORS config)
+#    - API_BASE_URL (web runtime config - your server's public URL)
 # 4. Run: docker-compose -f docker-compose.prod.yml up -d
 #
-# Note: The web image must be built with the correct VITE_API_BASE
-# Set this in GitHub Actions repository variables before building
+# Example .env file:
+#   JWT_SECRET=your-super-secret-jwt-key
+#   CORS_ALLOWED_ORIGINS=https://app.example.com,https://www.example.com
+#   API_BASE_URL=https://api.example.com
+#
+# Note: The web image can now be configured at runtime with API_BASE_URL
+# No rebuild required to change the server URL!
