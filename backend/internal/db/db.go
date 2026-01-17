@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/shalteor/cryptd-poc/backend/internal/models"
+	_ "modernc.org/sqlite"
 )
 
 var (

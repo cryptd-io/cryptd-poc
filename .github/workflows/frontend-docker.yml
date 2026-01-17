@@ -71,10 +71,10 @@ jobs:
           build-args: |
             VITE_API_BASE=${{ vars.VITE_API_BASE }}
 
-      - name: Generate artifact attestation
-        if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.meta.outputs.digest }}
-          push-to-registry: true
+      # - name: Generate artifact attestation
+      #   if: github.event_name != 'pull_request'
+      #   uses: actions/attest-build-provenance@v1
+      #   with:
+      #     subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      #     subject-digest: ${{ steps.meta.outputs.digest }}
+      #     push-to-registry: true
