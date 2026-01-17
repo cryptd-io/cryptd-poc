@@ -52,16 +52,18 @@ export default function Notes() {
         
         const data: NotesData = JSON.parse(decrypted);
         setNotes(data.notes || []);
-      } catch (err: any) {
+      } catch (err) {
         // Blob doesn't exist yet (404), start with empty notes
-        if (err.status === 404) {
+        const error = err as { status?: number };
+        if (error.status === 404) {
           setNotes([]);
         } else {
           throw err;
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load notes');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to load notes');
     } finally {
       setLoading(false);
     }
@@ -142,8 +144,9 @@ export default function Notes() {
         setSelectedNote(savedNote);
       }
       setIsEditing(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to save note');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to save note');
     } finally {
       setSaving(false);
     }
@@ -164,8 +167,9 @@ export default function Notes() {
       setTitle('');
       setContent('');
       setIsEditing(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete note');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to delete note');
     } finally {
       setSaving(false);
     }
@@ -197,8 +201,9 @@ export default function Notes() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err.message || 'Failed to export notes');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to export notes');
     }
   };
 
@@ -244,8 +249,9 @@ export default function Notes() {
         setIsEditing(false);
 
         alert(`Successfully imported ${importData.notes.length} notes!`);
-      } catch (err: any) {
-        setError(err.message || 'Failed to import notes');
+      } catch (err) {
+        const error = err as Error;
+        setError(error.message || 'Failed to import notes');
       } finally {
         setSaving(false);
       }

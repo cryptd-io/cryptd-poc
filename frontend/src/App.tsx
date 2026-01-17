@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import Auth from './components/Auth';
 import Notes from './components/Notes';
@@ -63,12 +63,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const [authenticated, setAuthenticated] = useState(isAuthenticated());
-
-  useEffect(() => {
-    // Check auth state on mount
-    setAuthenticated(isAuthenticated());
-  }, []);
+  const [authenticated, setAuthenticated] = useState(() => isAuthenticated());
 
   const handleAuthenticated = () => {
     setAuthenticated(true);

@@ -52,9 +52,9 @@ export interface BlobListItem {
 
 export class APIError extends Error {
   status: number;
-  data?: any;
+  data?: Record<string, unknown>;
   
-  constructor(message: string, status: number, data?: any) {
+  constructor(message: string, status: number, data?: Record<string, unknown>) {
     super(message);
     this.name = 'APIError';
     this.status = status;
@@ -64,10 +64,10 @@ export class APIError extends Error {
 
 // === Helper Functions ===
 
-async function fetchJSON(
+async function fetchJSON<T = Record<string, unknown>>(
   url: string,
   options: RequestInit = {}
-): Promise<any> {
+): Promise<T> {
   const response = await fetch(`${API_BASE}${url}`, {
     ...options,
     headers: {
@@ -101,14 +101,14 @@ function withAuth(token: string, headers: Record<string, string> = {}): Record<s
  * Get KDF parameters for a username
  */
 export async function getKDFParams(username: string): Promise<KDFParams> {
-  return fetchJSON(`/v1/auth/kdf?username=${encodeURIComponent(username)}`);
+  return fetchJSON<KDFParams>(`/v1/auth/kdf?username=${encodeURIComponent(username)}`);
 }
 
 /**
  * Register a new user
  */
 export async function register(request: RegisterRequest): Promise<void> {
-  await fetchJSON('/v1/auth/register', {
+  await fetchJSON<void>('/v1/auth/register', {
     method: 'POST',
     body: JSON.stringify(request),
   });
@@ -118,7 +118,7 @@ export async function register(request: RegisterRequest): Promise<void> {
  * Verify credentials and get JWT token
  */
 export async function verify(request: VerifyRequest): Promise<VerifyResponse> {
-  return fetchJSON('/v1/auth/verify', {
+  return fetchJSON<VerifyResponse>('/v1/auth/verify', {
     method: 'POST',
     body: JSON.stringify(request),
   });
@@ -133,7 +133,7 @@ export async function updateUser(
   token: string,
   request: UpdateUserRequest
 ): Promise<void> {
-  await fetchJSON('/v1/users/me', {
+  await fetchJSON<void>('/v1/users/me', {
     method: 'PATCH',
     headers: withAuth(token),
     body: JSON.stringify(request),
@@ -148,7 +148,7 @@ export async function upsertBlob(
   blobName: string,
   request: UpsertBlobRequest
 ): Promise<void> {
-  await fetchJSON(`/v1/blobs/${encodeURIComponent(blobName)}`, {
+  await fetchJSON<void>(`/v1/blobs/${encodeURIComponent(blobName)}`, {
     method: 'PUT',
     headers: withAuth(token),
     body: JSON.stringify(request),
@@ -162,7 +162,7 @@ export async function getBlob(
   token: string,
   blobName: string
 ): Promise<BlobResponse> {
-  return fetchJSON(`/v1/blobs/${encodeURIComponent(blobName)}`, {
+  return fetchJSON<BlobResponse>(`/v1/blobs/${encodeURIComponent(blobName)}`, {
     headers: withAuth(token),
   });
 }
@@ -171,7 +171,7 @@ export async function getBlob(
  * List all blobs
  */
 export async function listBlobs(token: string): Promise<BlobListItem[]> {
-  return fetchJSON('/v1/blobs', {
+  return fetchJSON<BlobListItem[]>('/v1/blobs', {
     headers: withAuth(token),
   });
 }
@@ -183,7 +183,7 @@ export async function deleteBlob(
   token: string,
   blobName: string
 ): Promise<void> {
-  await fetchJSON(`/v1/blobs/${encodeURIComponent(blobName)}`, {
+  await fetchJSON<void>(`/v1/blobs/${encodeURIComponent(blobName)}`, {
     method: 'DELETE',
     headers: withAuth(token),
   });

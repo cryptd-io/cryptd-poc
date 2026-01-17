@@ -199,7 +199,7 @@ export async function decryptAES256GCM(
     );
 
     return new Uint8Array(decrypted);
-  } catch (error) {
+  } catch {
     throw new Error('Decryption failed - invalid key or tampered data');
   }
 }

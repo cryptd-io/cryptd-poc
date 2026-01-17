@@ -52,16 +52,18 @@ export default function Diary() {
         // Sort by createdAt descending (newest first)
         const sorted = (data.entries || []).sort((a, b) => b.createdAt - a.createdAt);
         setEntries(sorted);
-      } catch (err: any) {
+      } catch (err) {
         // Blob doesn't exist yet (404), start with empty entries
-        if (err.status === 404) {
+        const error = err as { status?: number };
+        if (error.status === 404) {
           setEntries([]);
         } else {
           throw err;
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load diary');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to load diary');
     } finally {
       setLoading(false);
     }
@@ -105,8 +107,9 @@ export default function Diary() {
       await saveEntries(updatedEntries);
       setEntries(updatedEntries);
       setNewEntry('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to add entry');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to add entry');
     } finally {
       setSaving(false);
     }
@@ -137,8 +140,9 @@ export default function Diary() {
       setEntries(updatedEntries);
       setEditingId(null);
       setEditContent('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to update entry');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to update entry');
     } finally {
       setSaving(false);
     }
@@ -159,8 +163,9 @@ export default function Diary() {
       const updatedEntries = entries.filter((entry) => entry.id !== entryId);
       await saveEntries(updatedEntries);
       setEntries(updatedEntries);
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete entry');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to delete entry');
     } finally {
       setSaving(false);
     }
@@ -210,8 +215,9 @@ export default function Diary() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err.message || 'Failed to export diary');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to export diary');
     }
   };
 
@@ -258,8 +264,9 @@ export default function Diary() {
         setEditContent('');
 
         alert(`Successfully imported ${sorted.length} entries!`);
-      } catch (err: any) {
-        setError(err.message || 'Failed to import diary');
+      } catch (err) {
+        const error = err as Error;
+        setError(error.message || 'Failed to import diary');
       } finally {
         setSaving(false);
       }

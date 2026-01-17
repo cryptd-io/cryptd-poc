@@ -61,8 +61,9 @@ export default function Auth({ onAuthenticated }: AuthProps) {
 
       // Auto-login after registration
       await handleLoginFlow(username, password);
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -75,8 +76,9 @@ export default function Auth({ onAuthenticated }: AuthProps) {
 
     try {
       await handleLoginFlow(username, password);
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Login failed');
     } finally {
       setLoading(false);
     }
