@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/shalteor/cryptd-poc/backend/internal/crypto"
-	"github.com/shalteor/cryptd-poc/backend/internal/db"
-	"github.com/shalteor/cryptd-poc/backend/internal/models"
+	"github.com/shalteor/cryptd-poc/server/internal/crypto"
+	"github.com/shalteor/cryptd-poc/server/internal/db"
+	"github.com/shalteor/cryptd-poc/server/internal/models"
 )
 
 func setupTestServer(t *testing.T) (*Server, *db.DB) {
@@ -476,9 +476,9 @@ func TestGetBlob(t *testing.T) {
 		EncryptedBlob: models.Container{
 			Nonce:      "blob-nonce",
 			Ciphertext: "blob-ciphertext",
-		Tag:        "blob-tag",
-	},
-}
+			Tag:        "blob-tag",
+		},
+	}
 	_ = database.UpsertBlob(blob)
 
 	// Generate token and get blob
@@ -517,9 +517,9 @@ func TestListBlobs(t *testing.T) {
 		WrappedAccountKey: models.Container{
 			Nonce:      "nonce",
 			Ciphertext: "ciphertext",
-		Tag:        "tag",
-	},
-}
+			Tag:        "tag",
+		},
+	}
 	_ = database.CreateUser(user)
 
 	blobs := []string{"vault", "notes", "journal"}
@@ -530,9 +530,9 @@ func TestListBlobs(t *testing.T) {
 			EncryptedBlob: models.Container{
 				Nonce:      "nonce-" + name,
 				Ciphertext: "Y2lwaGVydGV4dC0=",
-			Tag:        "tag-" + name,
-		},
-	}
+				Tag:        "tag-" + name,
+			},
+		}
 		_ = database.UpsertBlob(blob)
 	}
 
@@ -582,9 +582,9 @@ func TestDeleteBlob(t *testing.T) {
 		EncryptedBlob: models.Container{
 			Nonce:      "nonce",
 			Ciphertext: "ciphertext",
-		Tag:        "tag",
-	},
-}
+			Tag:        "tag",
+		},
+	}
 	_ = database.UpsertBlob(blob)
 
 	// Generate token and delete blob

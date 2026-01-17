@@ -9,10 +9,10 @@ import (
 
 	_ "modernc.org/sqlite" // Import sqlite driver
 
-	"github.com/shalteor/cryptd-poc/backend/internal/api"
-	"github.com/shalteor/cryptd-poc/backend/internal/crypto"
-	"github.com/shalteor/cryptd-poc/backend/internal/db"
-	"github.com/shalteor/cryptd-poc/backend/internal/models"
+	"github.com/shalteor/cryptd-poc/server/internal/api"
+	"github.com/shalteor/cryptd-poc/server/internal/crypto"
+	"github.com/shalteor/cryptd-poc/server/internal/db"
+	"github.com/shalteor/cryptd-poc/server/internal/models"
 )
 
 // TestFullAuthFlow tests the complete authentication flow
@@ -218,14 +218,14 @@ func TestFullAuthFlow(t *testing.T) {
 
 			router.ServeHTTP(w, req)
 
-		if w.Code != http.StatusOK {
-			t.Fatalf("failed to get blob: status %d", w.Code)
-		}
+			if w.Code != http.StatusOK {
+				t.Fatalf("failed to get blob: status %d", w.Code)
+			}
 
-		var resp map[string]interface{}
-		_ = json.NewDecoder(w.Body).Decode(&resp)
+			var resp map[string]interface{}
+			_ = json.NewDecoder(w.Body).Decode(&resp)
 
-		if _, ok := resp["encryptedBlob"]; !ok {
+			if _, ok := resp["encryptedBlob"]; !ok {
 				t.Error("expected encryptedBlob in response")
 			}
 

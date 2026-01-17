@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/shalteor/cryptd-poc/backend/internal/api"
-	"github.com/shalteor/cryptd-poc/backend/internal/db"
+	"github.com/shalteor/cryptd-poc/server/internal/api"
+	"github.com/shalteor/cryptd-poc/server/internal/db"
 )
 
 func main() {

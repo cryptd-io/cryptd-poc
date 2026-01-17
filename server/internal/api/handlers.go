@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/shalteor/cryptd-poc/backend/internal/crypto"
-	"github.com/shalteor/cryptd-poc/backend/internal/db"
-	"github.com/shalteor/cryptd-poc/backend/internal/middleware"
-	"github.com/shalteor/cryptd-poc/backend/internal/models"
+	"github.com/shalteor/cryptd-poc/server/internal/crypto"
+	"github.com/shalteor/cryptd-poc/server/internal/db"
+	"github.com/shalteor/cryptd-poc/server/internal/middleware"
+	"github.com/shalteor/cryptd-poc/server/internal/models"
 )
 
 // Server represents the API server

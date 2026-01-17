@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/shalteor/cryptd-poc/backend/internal/models"
+	"github.com/shalteor/cryptd-poc/server/internal/models"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/pbkdf2"

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shalteor/cryptd-poc/backend/internal/models"
+	"github.com/shalteor/cryptd-poc/server/internal/models"
 	_ "modernc.org/sqlite"
 )
 

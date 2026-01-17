@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/shalteor/cryptd-poc/backend/internal/models"
+	"github.com/shalteor/cryptd-poc/server/internal/models"
 )
 
 func setupTestDB(t *testing.T) *DB {
