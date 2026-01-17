@@ -1,4 +1,4 @@
-name: Backend Tests
+name: Server Tests
 
 on:
   push:
@@ -6,14 +6,14 @@ on:
       - main
       - develop
     paths:
-      - 'backend/**'
-      - '.github/workflows/backend-test.yml'
+      - 'server/**'
+      - '.github/workflows/server-test.yml'
   pull_request:
     branches:
       - main
       - develop
     paths:
-      - 'backend/**'
+      - 'server/**'
   workflow_dispatch:
 
 jobs:
@@ -28,36 +28,36 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: server/go.sum
 
       - name: Download dependencies
-        working-directory: ./backend
+        working-directory: ./server
         run: go mod download
 
       - name: Verify dependencies
-        working-directory: ./backend
+        working-directory: ./server
         run: go mod verify
 
       - name: Run go vet
-        working-directory: ./backend
+        working-directory: ./server
         run: go vet ./...
 
       - name: Run tests
-        working-directory: ./backend
+        working-directory: ./server
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Generate coverage report
-        working-directory: ./backend
+        working-directory: ./server
         run: go tool cover -html=coverage.out -o coverage.html
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: backend/coverage.html
+          path: server/coverage.html
 
       - name: Check test coverage
-        working-directory: ./backend
+        working-directory: ./server
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: ${COVERAGE}%"
@@ -76,13 +76,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: server/go.sum
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.8.0
-          working-directory: backend
+          working-directory: server
           args: --timeout=5m
 
   build:
@@ -97,14 +97,14 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-          cache-dependency-path: backend/go.sum
+          cache-dependency-path: server/go.sum
 
       - name: Build binary
-        working-directory: ./backend
+        working-directory: ./server
         run: CGO_ENABLED=0 go build -v -ldflags="-s -w" -o bin/cryptd-server ./cmd/server
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
           name: cryptd-server
-          path: backend/bin/cryptd-server
+          path: server/bin/cryptd-server

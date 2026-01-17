@@ -1,6 +1,6 @@
 # Environment Variables Quick Reference
 
-## Backend Configuration
+## Server Configuration
 
 ### JWT_SECRET (Required)
 **Purpose**: Secret key for signing JWT authentication tokens
@@ -23,7 +23,7 @@ openssl rand -base64 32
 ---
 
 ### CORS_ALLOWED_ORIGINS (Optional)
-**Purpose**: Configure which frontend origins can access the API
+**Purpose**: Configure which web app origins can access the API
 
 **Format**: Comma-separated list of origins (no spaces after commas)
 
@@ -49,10 +49,10 @@ docker run -e CORS_ALLOWED_ORIGINS="https://app.example.com" ...
 
 ---
 
-## Frontend Configuration
+## Web Configuration
 
 ### VITE_API_BASE (Build-time)
-**Purpose**: Configure the backend API URL
+**Purpose**: Configure the server API URL
 
 **Important**: This is a build-time variable. It must be set when building the Docker image or running `npm run build`.
 
@@ -69,14 +69,14 @@ npm run build
 
 **Docker build example:**
 ```bash
-docker build --build-arg VITE_API_BASE="https://api.example.com" ./frontend
+docker build --build-arg VITE_API_BASE="https://api.example.com" ./web
 ```
 
 **docker-compose example:**
 ```yaml
-frontend:
+web:
   build:
-    context: ./frontend
+    context: ./web
     args:
       - VITE_API_BASE=https://api.example.com
 ```
@@ -87,11 +87,11 @@ frontend:
 
 ### Local Development
 ```bash
-# Backend
+# Server
 export JWT_SECRET="dev-secret-not-for-production"
 # CORS_ALLOWED_ORIGINS not needed (uses defaults)
 
-# Frontend
+# Web
 # VITE_API_BASE not needed (uses default http://localhost:8080)
 ```
 
@@ -108,18 +108,18 @@ docker-compose up -d
 
 ### Production with Pre-built Images
 ```bash
-# Backend
+# Server
 docker run -d \
   -p 8080:8080 \
   -e JWT_SECRET="your-secret" \
   -e CORS_ALLOWED_ORIGINS="https://app.example.com" \
   -v /data:/data \
-  ghcr.io/<owner>/<repo>/backend:latest
+  ghcr.io/<owner>/<repo>/server:latest
 
-# Frontend (must be built with correct VITE_API_BASE via GitHub Actions)
+# Web (must be built with correct VITE_API_BASE via GitHub Actions)
 docker run -d \
   -p 80:80 \
-  ghcr.io/<owner>/<repo>/frontend:latest
+  ghcr.io/<owner>/<repo>/web:latest
 ```
 
 ---
@@ -128,7 +128,7 @@ docker run -d \
 
 ### Setting Repository Variables
 
-For GitHub Actions to build the frontend with the correct API URL:
+For GitHub Actions to build the web app with the correct API URL:
 
 1. Go to your repository on GitHub
 2. Navigate to **Settings** → **Secrets and variables** → **Actions** → **Variables**
@@ -136,7 +136,7 @@ For GitHub Actions to build the frontend with the correct API URL:
    - **Name**: `VITE_API_BASE`
    - **Value**: `https://api.your-domain.com`
 
-This will be used automatically by the frontend workflow when building images.
+This will be used automatically by the web workflow when building images.
 
 ### Setting Repository Secrets
 
@@ -151,23 +151,23 @@ For sensitive values (not needed for public endpoints):
 ## Troubleshooting
 
 ### CORS errors in browser
-**Problem**: Frontend can't access backend API
+**Problem**: Web app can't access server API
 
-**Solution**: Set `CORS_ALLOWED_ORIGINS` on backend to include your frontend URL
+**Solution**: Set `CORS_ALLOWED_ORIGINS` on server to include your web URL
 ```bash
-export CORS_ALLOWED_ORIGINS="https://your-frontend-domain.com"
+export CORS_ALLOWED_ORIGINS="https://your-web-domain.com"
 ```
 
-### Frontend connecting to wrong API
-**Problem**: API calls go to localhost instead of production backend
+### Web connecting to wrong API
+**Problem**: API calls go to localhost instead of production server
 
-**Solution**: Rebuild frontend with correct `VITE_API_BASE`
+**Solution**: Rebuild web with correct `VITE_API_BASE`
 ```bash
-docker build --build-arg VITE_API_BASE="https://api.example.com" ./frontend
+docker build --build-arg VITE_API_BASE="https://api.example.com" ./web
 ```
 
 ### JWT authentication fails
-**Problem**: Backend returns 401 errors
+**Problem**: Server returns 401 errors
 
 **Solution**: Ensure `JWT_SECRET` is set and is the same secret used when the tokens were created
 ```bash

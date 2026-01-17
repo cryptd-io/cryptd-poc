@@ -1,4 +1,4 @@
-name: Build and Push Frontend Docker Image
+name: Build and Push Web Docker Image
 
 on:
   push:
@@ -6,20 +6,20 @@ on:
       - main
       - develop
     paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend-docker.yml'
+      - 'web/**'
+      - '.github/workflows/web-docker.yml'
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
     paths:
-      - 'frontend/**'
+      - 'web/**'
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/frontend
+  IMAGE_NAME: ${{ github.repository }}/web
 
 jobs:
   build-and-push:
@@ -60,8 +60,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
+          context: ./web
+          file: ./web/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

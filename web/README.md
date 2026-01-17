@@ -35,7 +35,7 @@ React + TypeScript + Vite frontend for the cryptd encrypted vault.
 ### Project Structure
 
 ```
-frontend/
+web/
 ├── src/
 │   ├── lib/
 │   │   ├── crypto.ts      # Cryptographic utilities (KDF, HKDF, AES-GCM)
@@ -342,6 +342,6 @@ This is a proof-of-concept implementation for educational purposes.
 
 ## Related
 
-- [Backend README](../backend/README.md)
+- [Backend README](../server/README.md)
 - [Design Document](../DESIGN.md)
 - [Main README](../README.md)

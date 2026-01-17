@@ -1,4 +1,4 @@
-name: Build and Push Backend Docker Image
+name: Build and Push Server Docker Image
 
 on:
   push:
@@ -6,20 +6,20 @@ on:
       - main
       - develop
     paths:
-      - 'backend/**'
-      - '.github/workflows/backend-docker.yml'
+      - 'server/**'
+      - '.github/workflows/server-docker.yml'
     tags:
       - 'v*'
   pull_request:
     branches:
       - main
     paths:
-      - 'backend/**'
+      - 'server/**'
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/backend
+  IMAGE_NAME: ${{ github.repository }}/server
 
 jobs:
   build-and-push:
@@ -60,8 +60,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
-          file: ./backend/Dockerfile
+          context: ./server
+          file: ./server/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

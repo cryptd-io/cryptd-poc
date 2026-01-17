@@ -6,7 +6,7 @@ A minimal end-to-end encryption system where the **server stores and serves opaq
 
 ```
 cryptd-poc/
-├── backend/           # Go backend server
+├── server/           # Go server
 │   ├── cmd/server/   # Main server entry point
 │   ├── internal/     # Internal packages
 │   │   ├── api/      # HTTP handlers and routing
@@ -15,11 +15,11 @@ cryptd-poc/
 │   │   ├── middleware/ # JWT authentication
 │   │   └── models/   # Data models
 │   └── tests/        # Integration tests
-├── frontend/         # React/Vite frontend (TypeScript)
+├── web/         # React/Vite web app (TypeScript)
 │   ├── src/
 │   │   ├── lib/      # Crypto, API, and auth utilities
 │   │   └── components/ # React components (Auth, Notes, Diary)
-│   └── README.md     # Frontend-specific documentation
+│   └── README.md     # Web-specific documentation
 ├── DESIGN.md         # Detailed design specification
 ├── Makefile          # Common development tasks
 └── docker-compose.yml # Docker deployment
@@ -46,35 +46,35 @@ cryptd-poc/
 ## Quick Start
 
 ### Prerequisites
-- Go 1.21+ (for backend)
-- Node.js 18+ (for frontend)
+- Go 1.21+ (for server)
+- Node.js 18+ (for web)
 - Docker & Docker Compose (optional, for containerized deployment)
 - Make (optional, for convenience commands)
 
-### Option 1: Local Development (Backend + Frontend)
+### Option 1: Local Development (Server + Web)
 
-1. **Set JWT Secret** (required for backend):
+1. **Set JWT Secret** (required for server):
    ```bash
    export JWT_SECRET="your-secure-random-secret-here"
    ```
 
-2. **Start the backend**:
+2. **Start the server**:
    ```bash
-   make backend-run
+   make server-run
    # or manually:
-   cd backend && go run ./cmd/server -jwt-secret $JWT_SECRET
+   cd server && go run ./cmd/server -jwt-secret $JWT_SECRET
    ```
 
-   The backend will start on http://localhost:8080
+   The server will start on http://localhost:8080
 
-3. **In a new terminal, start the frontend**:
+3. **In a new terminal, start the web app**:
    ```bash
-   make frontend-dev
+   make web-dev
    # or manually:
-   cd frontend && npm install && npm run dev
+   cd web && npm install && npm run dev
    ```
 
-   The frontend will start on http://localhost:5173
+   The web app will start on http://localhost:5173
 
 4. **Open your browser**:
    Navigate to http://localhost:5173 and register a new account!
@@ -94,19 +94,19 @@ cryptd-poc/
    ```
 
    This will start:
-   - **Backend** on http://localhost:8080
-   - **Frontend** on http://localhost (port 80)
+   - **Server** on http://localhost:8080
+   - **Web** on http://localhost (port 80)
 
 3. **Check logs**:
    ```bash
    # All services
    make docker-logs
    
-   # Backend only
-   make docker-logs-backend
+   # Server only
+   make docker-logs-server
    
-   # Frontend only
-   make docker-logs-frontend
+   # Web only
+   make docker-logs-web
    ```
 
 4. **Open your browser**:
@@ -117,7 +117,7 @@ cryptd-poc/
    make docker-down
    ```
 
-> **Note**: The frontend Nginx server proxies API requests (`/v1/*`) to the backend automatically. No CORS configuration needed!
+> **Note**: The web Nginx server proxies API requests (`/v1/*`) to the server automatically. No CORS configuration needed!
 
 ## Frontend Applications
 
@@ -256,13 +256,13 @@ make test-integration
 ### Generate Coverage Report
 ```bash
 make test-coverage
-# Opens backend/coverage.html
+# Opens server/coverage.html
 ```
 
 ### Build Binary
 ```bash
 make build
-# Output: backend/bin/cryptd-server
+# Output: server/bin/cryptd-server
 ```
 
 ### Clean Build Artifacts
@@ -270,7 +270,7 @@ make build
 make clean
 ```
 
-## Backend Architecture
+## Server Architecture
 
 ### Package Structure
 
@@ -314,7 +314,7 @@ make clean
 
 ### Environment Variables
 
-#### Backend
+#### Server
 - `JWT_SECRET` (required): Secret key for JWT token signing
   ```bash
   export JWT_SECRET="$(openssl rand -base64 32)"
@@ -325,8 +325,8 @@ make clean
   ```
   Default: localhost origins for development
 
-#### Frontend
-- `VITE_API_BASE` (optional): Backend API URL (set at build time)
+#### Web
+- `VITE_API_BASE` (optional): Server API URL (set at build time)
   ```bash
   export VITE_API_BASE="https://api.example.com"
   ```

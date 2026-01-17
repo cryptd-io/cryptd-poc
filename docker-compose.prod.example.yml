@@ -4,8 +4,8 @@ version: '3.8'
 # This example shows how to deploy using pre-built images from GitHub Container Registry
 
 services:
-  backend:
-    image: ghcr.io/<owner>/<repo>/backend:latest
+  server:
+    image: ghcr.io/<owner>/<repo>/server:latest
     ports:
       - "8080:8080"
     environment:
@@ -23,13 +23,13 @@ services:
     networks:
       - cryptd-network
 
-  frontend:
-    image: ghcr.io/<owner>/<repo>/frontend:latest
+  web:
+    image: ghcr.io/<owner>/<repo>/web:latest
     ports:
       - "80:80"
       - "443:443"  # If using HTTPS with custom nginx config
     depends_on:
-      - backend
+      - server
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
@@ -58,5 +58,5 @@ networks:
 # 3. Create a .env file with JWT_SECRET and CORS_ALLOWED_ORIGINS
 # 4. Run: docker-compose -f docker-compose.prod.yml up -d
 #
-# Note: The frontend image must be built with the correct VITE_API_BASE
+# Note: The web image must be built with the correct VITE_API_BASE
 # Set this in GitHub Actions repository variables before building

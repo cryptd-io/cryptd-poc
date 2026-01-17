@@ -128,10 +128,10 @@ docker volume ls | grep cryptd
 docker volume inspect cryptd_cryptd-data
 
 # Backup database
-docker cp cryptd-backend-1:/data/cryptd.db ./backup-$(date +%Y%m%d).db
+docker cp cryptd-server-1:/data/cryptd.db ./backup-$(date +%Y%m%d).db
 
 # Restore database
-docker cp ./backup.db cryptd-backend-1:/data/cryptd.db
+docker cp ./backup.db cryptd-server-1:/data/cryptd.db
 docker-compose restart backend
 ```
 
@@ -157,10 +157,10 @@ make docker-restart
 make docker-logs
 
 # Backend only
-make docker-logs-backend
+make docker-logs-server
 
 # Frontend only
-make docker-logs-frontend
+make docker-logs-web
 
 # Last 100 lines
 docker-compose logs --tail=100
@@ -249,7 +249,7 @@ lsof -i :8080
 
 ```bash
 # Check database file
-docker exec cryptd-backend-1 ls -lh /data/
+docker exec cryptd-server-1 ls -lh /data/
 
 # Reset database (WARNING: deletes all data)
 docker-compose down -v
@@ -279,20 +279,20 @@ docker-compose ps backend
 docker-compose logs backend
 
 # Test backend from frontend container
-docker exec cryptd-frontend-1 wget -O- http://backend:8080/v1/auth/kdf?username=test
+docker exec cryptd-web-1 wget -O- http://backend:8080/v1/auth/kdf?username=test
 ```
 
 ### Nginx Configuration Issues
 
 ```bash
 # Check nginx config
-docker exec cryptd-frontend-1 nginx -t
+docker exec cryptd-web-1 nginx -t
 
 # Reload nginx
-docker exec cryptd-frontend-1 nginx -s reload
+docker exec cryptd-web-1 nginx -s reload
 
 # View nginx logs
-docker exec cryptd-frontend-1 cat /var/log/nginx/error.log
+docker exec cryptd-web-1 cat /var/log/nginx/error.log
 ```
 
 ## Production Deployment
@@ -349,7 +349,7 @@ networks:
 # Automated backup script
 #!/bin/bash
 DATE=$(date +%Y%m%d-%H%M%S)
-docker cp cryptd-backend-1:/data/cryptd.db ./backups/cryptd-$DATE.db
+docker cp cryptd-server-1:/data/cryptd.db ./backups/cryptd-$DATE.db
 gzip ./backups/cryptd-$DATE.db
 
 # Keep last 30 days
@@ -360,7 +360,7 @@ find ./backups/ -name "*.db.gz" -mtime +30 -delete
 
 ```bash
 # Container stats
-docker stats cryptd-backend-1 cryptd-frontend-1
+docker stats cryptd-server-1 cryptd-web-1
 
 # Health status
 watch 'docker-compose ps'
@@ -434,6 +434,6 @@ docker-compose up -d
 
 For more information:
 - [Main README](../README.md)
-- [Backend README](../backend/README.md)
-- [Frontend README](../frontend/README.md)
+- [Backend README](../server/README.md)
+- [Frontend README](../web/README.md)
 - [Quick Start Guide](../QUICKSTART.md)

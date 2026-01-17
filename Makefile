@@ -1,7 +1,7 @@
 # cryptd Makefile
 # Convenience commands for development
 
-.PHONY: help backend-test backend-run backend-build frontend-dev frontend-build frontend-install dev clean
+.PHONY: help server-test server-run server-build web-dev web-build web-install dev clean
 
 help: ## Show this help message
 	@echo "cryptd - Encrypted Blob Vault"
@@ -9,58 +9,58 @@ help: ## Show this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# Backend commands
-backend-test: ## Run backend tests
-	cd backend && go test ./... -v -cover
+# Server commands
+server-test: ## Run server tests
+	cd server && go test ./... -v -cover
 
-backend-run: ## Run backend server (requires JWT_SECRET env var)
-	cd backend && go run ./cmd/server -jwt-secret $(JWT_SECRET)
+server-run: ## Run server (requires JWT_SECRET env var)
+	cd server && go run ./cmd/server -jwt-secret $(JWT_SECRET)
 
-backend-build: ## Build backend binary
-	cd backend && go build -o bin/cryptd-server ./cmd/server
+server-build: ## Build server binary
+	cd server && go build -o bin/cryptd-server ./cmd/server
 
-# Frontend commands
-frontend-install: ## Install frontend dependencies
-	cd frontend && npm install
+# Web commands
+web-install: ## Install web dependencies
+	cd web && npm install
 
-frontend-dev: ## Run frontend dev server
-	cd frontend && npm run dev
+web-dev: ## Run web dev server
+	cd web && npm run dev
 
-frontend-build: ## Build frontend for production
-	cd frontend && npm run build
+web-build: ## Build web for production
+	cd web && npm run build
 
-frontend-preview: ## Preview production build
-	cd frontend && npm run preview
+web-preview: ## Preview production build
+	cd web && npm run preview
 
 # Combined commands
-dev: ## Run both backend and frontend in parallel (requires JWT_SECRET)
-	@echo "Starting backend and frontend..."
-	@echo "Backend: http://localhost:8080"
-	@echo "Frontend: http://localhost:5173"
-	@$(MAKE) -j2 backend-run frontend-dev
+dev: ## Run both server and web in parallel (requires JWT_SECRET)
+	@echo "Starting server and web..."
+	@echo "Server: http://localhost:8080"
+	@echo "Web: http://localhost:5173"
+	@$(MAKE) -j2 server-run web-dev
 
-install: ## Install all dependencies (backend + frontend)
-	@echo "Installing backend dependencies..."
-	cd backend && go mod download
-	@echo "Installing frontend dependencies..."
-	cd frontend && npm install
+install: ## Install all dependencies (server + web)
+	@echo "Installing server dependencies..."
+	cd server && go mod download
+	@echo "Installing web dependencies..."
+	cd web && npm install
 	@echo "✅ All dependencies installed"
 
 test: ## Run all tests
-	@echo "Running backend tests..."
-	cd backend && go test ./... -v
+	@echo "Running server tests..."
+	cd server && go test ./... -v
 	@echo "✅ All tests passed"
 
-build: ## Build backend and frontend
-	@echo "Building backend..."
-	cd backend && go build -o bin/cryptd-server ./cmd/server
-	@echo "Building frontend..."
-	cd frontend && npm run build
+build: ## Build server and web
+	@echo "Building server..."
+	cd server && go build -o bin/cryptd-server ./cmd/server
+	@echo "Building web..."
+	cd web && npm run build
 	@echo "✅ Build complete"
 
 clean: ## Clean build artifacts
-	cd backend && rm -rf bin/ *.db coverage.out coverage.html
-	cd frontend && rm -rf dist/ node_modules/
+	cd server && rm -rf bin/ *.db coverage.out coverage.html
+	cd web && rm -rf dist/ node_modules/
 	@echo "✅ Cleaned"
 
 # Docker commands
@@ -73,11 +73,11 @@ docker-down: ## Stop docker-compose services
 docker-logs: ## View docker-compose logs
 	docker-compose logs -f
 
-docker-logs-backend: ## View backend logs only
-	docker-compose logs -f backend
+docker-logs-server: ## View server logs only
+	docker-compose logs -f server
 
-docker-logs-frontend: ## View frontend logs only
-	docker-compose logs -f frontend
+docker-logs-web: ## View web logs only
+	docker-compose logs -f web
 
 docker-build: ## Rebuild docker images
 	docker-compose build
@@ -99,6 +99,6 @@ quickstart: install ## Quick start: install deps and show instructions
 	@echo "  2. Run: make dev"
 	@echo ""
 	@echo "Or start services separately:"
-	@echo "  - Backend: make backend-run"
-	@echo "  - Frontend: make frontend-dev"
+	@echo "  - Server: make server-run"
+	@echo "  - Web: make web-dev"
 	@echo ""

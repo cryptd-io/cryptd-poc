@@ -35,12 +35,12 @@ That's it! 🚀
 
 ```
 cryptd-poc/
-├── backend/              # Go backend server
+├── server/              # Go backend server
 │   ├── cmd/server/      # Main entry point
 │   ├── internal/        # Crypto, DB, API, middleware
 │   ├── Dockerfile       # Multi-stage build
 │   └── README.md        # Backend docs
-├── frontend/            # React frontend
+├── web/            # React frontend
 │   ├── src/
 │   │   ├── lib/        # Crypto, API, auth utilities
 │   │   └── components/ # Auth, Notes, Diary apps
@@ -94,10 +94,10 @@ make install
 export JWT_SECRET="test-secret"
 
 # 3. Start backend (terminal 1)
-make backend-run
+make server-run
 
 # 4. Start frontend (terminal 2)
-make frontend-dev
+make web-dev
 
 # 5. Open http://localhost:5173
 ```
@@ -154,8 +154,8 @@ make docker-down
 | [QUICKSTART.md](QUICKSTART.md) | 5-minute setup guide |
 | [DOCKER.md](DOCKER.md) | Docker deployment guide |
 | [DESIGN.md](DESIGN.md) | Security specification (536 lines) |
-| [backend/README.md](backend/README.md) | Backend architecture |
-| [frontend/README.md](frontend/README.md) | Frontend architecture |
+| [server/README.md](server/README.md) | Backend architecture |
+| [web/README.md](web/README.md) | Frontend architecture |
 | [IMPLEMENTATION.md](IMPLEMENTATION.md) | Backend implementation details |
 | [FRONTEND_IMPLEMENTATION.md](FRONTEND_IMPLEMENTATION.md) | Frontend implementation details |
 
@@ -170,24 +170,24 @@ make quickstart          # Interactive setup
 
 # Development
 make dev                 # Run backend + frontend in parallel
-make backend-run         # Run backend only
-make frontend-dev        # Run frontend only
+make server-run         # Run backend only
+make web-dev        # Run frontend only
 
 # Testing
 make test                # Run all tests
-make backend-test        # Backend tests only
+make server-test        # Backend tests only
 
 # Building
 make build               # Build both
-make backend-build       # Build backend binary
-make frontend-build      # Build frontend static files
+make server-build       # Build backend binary
+make web-build      # Build frontend static files
 
 # Docker
 make docker-up           # Start all services
 make docker-down         # Stop all services
 make docker-logs         # View all logs
-make docker-logs-backend # Backend logs only
-make docker-logs-frontend # Frontend logs only
+make docker-logs-server # Backend logs only
+make docker-logs-web # Frontend logs only
 make docker-build        # Rebuild images
 make docker-restart      # Restart services
 make docker-clean        # Remove everything

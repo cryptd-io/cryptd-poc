@@ -5,7 +5,7 @@ Go backend server implementing the cryptd encrypted blob vault API.
 ## Project Structure
 
 ```
-backend/
+server/
 ├── cmd/
 │   └── server/          # Main application entry point
 │       └── main.go

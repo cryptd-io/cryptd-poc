@@ -11,7 +11,7 @@ The cryptd frontend has been fully implemented with React + TypeScript + Vite.
 ## 📁 Project Structure
 
 ```
-frontend/
+web/
 ├── src/
 │   ├── lib/
 │   │   ├── crypto.ts          # 300+ lines - All cryptographic operations

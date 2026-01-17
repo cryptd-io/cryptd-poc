@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  backend:
+  server:
     build:
-      context: ./backend
+      context: ./server
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -22,16 +22,16 @@ services:
     networks:
       - cryptd-network
 
-  frontend:
+  web:
     build:
-      context: ./frontend
+      context: ./web
       dockerfile: Dockerfile
       args:
         - VITE_API_BASE=${VITE_API_BASE:-http://localhost:8080}
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - server
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]

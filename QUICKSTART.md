@@ -32,10 +32,10 @@ This installs:
 ### 4. Start Both Services
 ```bash
 # Terminal 1 - Backend
-make backend-run
+make server-run
 
 # Terminal 2 - Frontend (in new terminal)
-make frontend-dev
+make web-dev
 ```
 
 OR use the combined command (runs both in parallel):
@@ -84,8 +84,8 @@ make docker-down
 
 ## Need Help?
 
-- Backend docs: [backend/README.md](backend/README.md)
-- Frontend docs: [frontend/README.md](frontend/README.md)
+- Backend docs: [server/README.md](server/README.md)
+- Frontend docs: [web/README.md](web/README.md)
 - Design spec: [DESIGN.md](DESIGN.md)
 - Main README: [README.md](README.md)
 

@@ -1,4 +1,4 @@
-module github.com/shalteor/cryptd-poc/backend
+module github.com/shalteor/cryptd-poc/server
 
 go 1.24.0
 

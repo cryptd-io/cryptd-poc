@@ -18,7 +18,7 @@ The cryptd backend has been fully implemented according to the DESIGN.md specifi
 ### 🏗️ Architecture
 
 ```
-backend/
+server/
 ├── cmd/server/              # Entry point (53 lines)
 ├── internal/
 │   ├── api/                 # HTTP handlers & routing (~480 lines)
@@ -182,7 +182,7 @@ backend/
 - ✅ Security considerations
 - ✅ Architecture overview
 
-#### backend/README.md
+#### server/README.md
 - ✅ Detailed project structure
 - ✅ Dependency explanations
 - ✅ Build/test/run instructions
@@ -256,7 +256,7 @@ All requirements from DESIGN.md have been implemented:
 2. ✅ **Comprehensive test suite** (50+ tests, 68% coverage)
 3. ✅ **Docker deployment** (Dockerfile + docker-compose)
 4. ✅ **Development tooling** (Makefile)
-5. ✅ **Complete documentation** (README.md + backend/README.md)
+5. ✅ **Complete documentation** (README.md + server/README.md)
 6. ✅ **Clean codebase** (organized, commented, idiomatic Go)
 
 ### 🎓 Code Quality

@@ -6,32 +6,32 @@ This document describes the GitHub Actions workflows for building and publishing
 
 Two workflows are configured to automatically build and publish Docker images to GitHub Container Registry (ghcr.io):
 
-### Backend Workflow (`.github/workflows/backend-docker.yml`)
+### Server Workflow (`.github/workflows/server-docker.yml`)
 
 **Triggers:**
-- Push to `main` or `develop` branches (when backend files change)
-- Pull requests to `main` (when backend files change)
+- Push to `main` or `develop` branches (when server files change)
+- Pull requests to `main` (when server files change)
 - Tag pushes matching `v*` pattern
 - Manual workflow dispatch
 
 **What it does:**
-- Builds the backend Docker image from `backend/Dockerfile`
-- Publishes to `ghcr.io/<owner>/<repo>/backend`
+- Builds the server Docker image from `server/Dockerfile`
+- Publishes to `ghcr.io/<owner>/<repo>/server`
 - Creates tags for branches, PRs, semantic versions, and commit SHAs
 - Supports multi-platform builds (linux/amd64, linux/arm64)
 - Uses build cache for faster builds
 
-### Frontend Workflow (`.github/workflows/frontend-docker.yml`)
+### Web Workflow (`.github/workflows/web-docker.yml`)
 
 **Triggers:**
-- Push to `main` or `develop` branches (when frontend files change)
-- Pull requests to `main` (when frontend files change)
+- Push to `main` or `develop` branches (when web files change)
+- Pull requests to `main` (when web files change)
 - Tag pushes matching `v*` pattern
 - Manual workflow dispatch
 
 **What it does:**
-- Builds the frontend Docker image from `frontend/Dockerfile`
-- Publishes to `ghcr.io/<owner>/<repo>/frontend`
+- Builds the web Docker image from `web/Dockerfile`
+- Publishes to `ghcr.io/<owner>/<repo>/web`
 - Creates tags for branches, PRs, semantic versions, and commit SHAs
 - Supports multi-platform builds (linux/amd64, linux/arm64)
 - Uses build cache for faster builds
@@ -39,9 +39,9 @@ Two workflows are configured to automatically build and publish Docker images to
 
 ## Configuration
 
-### Backend CORS Configuration
+### Server CORS Configuration
 
-The backend accepts a `CORS_ALLOWED_ORIGINS` environment variable to configure allowed origins for CORS.
+The server accepts a `CORS_ALLOWED_ORIGINS` environment variable to configure allowed origins for CORS.
 
 **Environment Variable:**
 ```bash
@@ -65,12 +65,12 @@ docker run -d \
   -e JWT_SECRET=your-secret-key \
   -e CORS_ALLOWED_ORIGINS="https://app.example.com,https://www.example.com" \
   -v /path/to/data:/data \
-  ghcr.io/<owner>/<repo>/backend:latest
+  ghcr.io/<owner>/<repo>/server:latest
 ```
 
-### Frontend API URL Configuration
+### Web API URL Configuration
 
-The frontend accepts a `VITE_API_BASE` environment variable at **build time** to configure the backend API URL.
+The web app accepts a `VITE_API_BASE` environment variable at **build time** to configure the server API URL.
 
 **Build Argument:**
 ```bash
@@ -84,15 +84,15 @@ VITE_API_BASE=https://api.example.com
 ```bash
 docker build \
   --build-arg VITE_API_BASE=https://api.example.com \
-  -t myapp-frontend \
-  ./frontend
+  -t myapp-web \
+  ./web
 ```
 
 **Example Docker run:**
 ```bash
 docker run -d \
   -p 80:80 \
-  ghcr.io/<owner>/<repo>/frontend:latest
+  ghcr.io/<owner>/<repo>/web:latest
 ```
 
 ## Setting Up GitHub Workflows
@@ -114,7 +114,7 @@ docker run -d \
 2. **First Run**:
    - Push changes to the `main` or `develop` branch
    - The workflows will automatically trigger
-   - Images will be published to `ghcr.io/<owner>/<repo>/backend` and `ghcr.io/<owner>/<repo>/frontend`
+   - Images will be published to `ghcr.io/<owner>/<repo>/server` and `ghcr.io/<owner>/<repo>/web`
 
 3. **Package Visibility**:
    - By default, packages are private
@@ -124,11 +124,11 @@ docker run -d \
 
 **Pull the images:**
 ```bash
-# Backend
-docker pull ghcr.io/<owner>/<repo>/backend:latest
+# Server
+docker pull ghcr.io/<owner>/<repo>/server:latest
 
-# Frontend
-docker pull ghcr.io/<owner>/<repo>/frontend:latest
+# Web
+docker pull ghcr.io/<owner>/<repo>/web:latest
 ```
 
 **Run with docker-compose:**
@@ -136,8 +136,8 @@ docker pull ghcr.io/<owner>/<repo>/frontend:latest
 version: '3.8'
 
 services:
-  backend:
-    image: ghcr.io/<owner>/<repo>/backend:latest
+  server:
+    image: ghcr.io/<owner>/<repo>/server:latest
     ports:
       - "8080:8080"
     environment:
@@ -146,12 +146,12 @@ services:
     volumes:
       - ./data:/data
 
-  frontend:
-    image: ghcr.io/<owner>/<repo>/frontend:latest
+  web:
+    image: ghcr.io/<owner>/<repo>/web:latest
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - server
 ```
 
 ## Image Tags
@@ -179,7 +179,7 @@ The workflows automatically create the following tags:
 You can manually trigger the workflows:
 
 1. Go to Actions tab in your repository
-2. Select the workflow (Backend Docker or Frontend Docker)
+2. Select the workflow (Server Docker or Web Docker)
 3. Click "Run workflow"
 4. Select the branch and click "Run workflow"
 
@@ -189,12 +189,12 @@ You can manually trigger the workflows:
 - Ensure the `GITHUB_TOKEN` has `packages: write` permission (set automatically in workflow)
 
 **CORS errors in production:**
-- Set `CORS_ALLOWED_ORIGINS` environment variable in backend deployment
+- Set `CORS_ALLOWED_ORIGINS` environment variable in server deployment
 - Ensure origins include the protocol (http/https)
 
-**Frontend shows wrong API URL:**
+**Web shows wrong API URL:**
 - Set `VITE_API_BASE` repository variable in GitHub
-- Rebuild the frontend image after changing the variable
+- Rebuild the web image after changing the variable
 
 **Multi-platform build is slow:**
 - This is normal for the first build
