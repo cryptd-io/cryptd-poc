@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/shalteor/cryptd-poc/backend/internal/models"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/pbkdf2"
-	"github.com/shalteor/cryptd-poc/backend/internal/models"
 )
 
 const (
@@ -25,9 +25,9 @@ const (
 	LoginVerifierIterations = 600_000
 
 	// Minimum KDF parameter floors
-	MinPBKDF2Iterations = 100_000
-	MinArgon2Memory     = 16384  // 16 MiB in KiB
-	MinArgon2Iterations = 2
+	MinPBKDF2Iterations  = 100_000
+	MinArgon2Memory      = 16384 // 16 MiB in KiB
+	MinArgon2Iterations  = 2
 	MinArgon2Parallelism = 1
 )
 

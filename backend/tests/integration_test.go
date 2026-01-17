@@ -67,12 +67,12 @@ func TestFullAuthFlow(t *testing.T) {
 
 		// Register request
 		registerReq := map[string]interface{}{
-			"username":       username,
-			"kdfType":        string(kdfParams.Type),
-			"kdfIterations":  kdfParams.Iterations,
-			"kdfMemoryKiB":   *kdfParams.MemoryKiB,
-			"kdfParallelism": *kdfParams.Parallelism,
-			"loginVerifier":  crypto.EncodeBase64(loginVerifier),
+			"username":          username,
+			"kdfType":           string(kdfParams.Type),
+			"kdfIterations":     kdfParams.Iterations,
+			"kdfMemoryKiB":      *kdfParams.MemoryKiB,
+			"kdfParallelism":    *kdfParams.Parallelism,
+			"loginVerifier":     crypto.EncodeBase64(loginVerifier),
 			"wrappedAccountKey": wrappedAccountKey,
 		}
 

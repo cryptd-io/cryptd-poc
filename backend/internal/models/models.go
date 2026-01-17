@@ -27,16 +27,16 @@ type KDFParams struct {
 
 // User represents a user in the database
 type User struct {
-	ID                  int64     `json:"id"`
-	Username            string    `json:"username"`
-	KDFType             KDFType   `json:"-"`
-	KDFIterations       int       `json:"-"`
-	KDFMemoryKiB        *int      `json:"-"`
-	KDFParallelism      *int      `json:"-"`
-	LoginVerifierHash   []byte    `json:"-"`
-	WrappedAccountKey   Container `json:"-"`
-	CreatedAt           time.Time `json:"createdAt"`
-	UpdatedAt           time.Time `json:"updatedAt"`
+	ID                int64     `json:"id"`
+	Username          string    `json:"username"`
+	KDFType           KDFType   `json:"-"`
+	KDFIterations     int       `json:"-"`
+	KDFMemoryKiB      *int      `json:"-"`
+	KDFParallelism    *int      `json:"-"`
+	LoginVerifierHash []byte    `json:"-"`
+	WrappedAccountKey Container `json:"-"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
 }
 
 // Blob represents an encrypted blob in the database

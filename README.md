@@ -314,10 +314,23 @@ make clean
 
 ### Environment Variables
 
+#### Backend
 - `JWT_SECRET` (required): Secret key for JWT token signing
   ```bash
   export JWT_SECRET="$(openssl rand -base64 32)"
   ```
+- `CORS_ALLOWED_ORIGINS` (optional): Comma-separated list of allowed CORS origins
+  ```bash
+  export CORS_ALLOWED_ORIGINS="https://app.example.com,https://www.example.com"
+  ```
+  Default: localhost origins for development
+
+#### Frontend
+- `VITE_API_BASE` (optional): Backend API URL (set at build time)
+  ```bash
+  export VITE_API_BASE="https://api.example.com"
+  ```
+  Default: `http://localhost:8080`
 
 ### Command-line Flags
 
@@ -327,6 +340,16 @@ make clean
   -db /path/to/cryptd.db \
   -jwt-secret "your-secret"
 ```
+
+## CI/CD and Docker
+
+This project includes GitHub Actions workflows for automatically building and publishing Docker images.
+
+See [GITHUB_WORKFLOWS.md](GITHUB_WORKFLOWS.md) for detailed information on:
+- Setting up GitHub Container Registry
+- Configuring CORS and API URLs for production
+- Using pre-built Docker images
+- Deployment examples
 
 ## Security Considerations
 

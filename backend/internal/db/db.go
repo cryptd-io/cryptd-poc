@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
-	ErrUserExists        = errors.New("user already exists")
-	ErrBlobNotFound      = errors.New("blob not found")
-	ErrInvalidKDFType    = errors.New("invalid KDF type")
+	ErrUserNotFound   = errors.New("user not found")
+	ErrUserExists     = errors.New("user already exists")
+	ErrBlobNotFound   = errors.New("blob not found")
+	ErrInvalidKDFType = errors.New("invalid KDF type")
 )
 
 type DB struct {

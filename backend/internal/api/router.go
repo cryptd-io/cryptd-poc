@@ -1,10 +1,38 @@
 package api
 
 import (
+	"os"
+	"strings"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
+
+// getCORSOrigins returns the allowed CORS origins from environment variable or defaults
+func getCORSOrigins() []string {
+	originsEnv := os.Getenv("CORS_ALLOWED_ORIGINS")
+	if originsEnv != "" {
+		origins := strings.Split(originsEnv, ",")
+		// Trim spaces from each origin
+		for i := range origins {
+			origins[i] = strings.TrimSpace(origins[i])
+		}
+		return origins
+	}
+
+	// Default origins for local development
+	return []string{
+		"http://localhost",
+		"http://localhost:80",
+		"http://localhost:3000",
+		"http://localhost:5173",
+		"http://127.0.0.1",
+		"http://127.0.0.1:80",
+		"http://127.0.0.1:3000",
+		"http://127.0.0.1:5173",
+	}
+}
 
 // NewRouter creates a new HTTP router with all routes configured
 func (s *Server) NewRouter() *chi.Mux {
@@ -18,7 +46,7 @@ func (s *Server) NewRouter() *chi.Mux {
 
 	// CORS
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost", "http://localhost:80", "http://localhost:3000", "http://localhost:5173", "http://127.0.0.1", "http://127.0.0.1:80", "http://127.0.0.1:3000", "http://127.0.0.1:5173"},
+		AllowedOrigins:   getCORSOrigins(),
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
 		ExposedHeaders:   []string{"Link"},

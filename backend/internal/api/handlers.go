@@ -60,7 +60,7 @@ type RegisterRequest struct {
 	KDFIterations     int              `json:"kdfIterations"`
 	KDFMemoryKiB      *int             `json:"kdfMemoryKiB,omitempty"`
 	KDFParallelism    *int             `json:"kdfParallelism,omitempty"`
-	LoginVerifier     string           `json:"loginVerifier"`     // base64
+	LoginVerifier     string           `json:"loginVerifier"` // base64
 	WrappedAccountKey models.Container `json:"wrappedAccountKey"`
 }
 
