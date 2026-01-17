@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	_ "modernc.org/sqlite" // Import sqlite driver
+
 	"github.com/shalteor/cryptd-poc/backend/internal/api"
 	"github.com/shalteor/cryptd-poc/backend/internal/crypto"
 	"github.com/shalteor/cryptd-poc/backend/internal/db"

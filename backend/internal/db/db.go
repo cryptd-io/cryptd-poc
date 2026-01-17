@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/shalteor/cryptd-poc/backend/internal/models"
@@ -24,7 +25,7 @@ type DB struct {
 
 // New creates a new database connection and initializes the schema
 func New(dataSourceName string) (*DB, error) {
-	conn, err := sql.Open("sqlite3", dataSourceName)
+	conn, err := sql.Open("sqlite", dataSourceName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -81,7 +82,7 @@ func (db *DB) CreateUser(user *models.User) error {
 	)
 
 	if err != nil {
-		if err.Error() == "UNIQUE constraint failed: users.username" {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
 			return ErrUserExists
 		}
 		return fmt.Errorf("failed to create user: %w", err)
@@ -204,7 +205,7 @@ func (db *DB) UpdateUser(user *models.User) error {
 	)
 
 	if err != nil {
-		if err.Error() == "UNIQUE constraint failed: users.username" {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: users.username") {
 			return ErrUserExists
 		}
 		return fmt.Errorf("failed to update user: %w", err)
