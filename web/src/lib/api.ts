@@ -4,7 +4,17 @@
 
 import type { Container, KDFParams } from './crypto';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+// Get API base URL from runtime config (if available) or fall back to build-time env var
+const getApiBase = (): string => {
+  // Check for runtime config injected by nginx
+  if (typeof window !== 'undefined' && (window as any).APP_CONFIG?.apiBaseUrl) {
+    return (window as any).APP_CONFIG.apiBaseUrl;
+  }
+  // Fall back to build-time env var
+  return import.meta.env.VITE_API_BASE || 'http://localhost:8080';
+};
+
+const API_BASE = getApiBase();
 
 // === Types ===
 
