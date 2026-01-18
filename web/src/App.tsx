@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react
 import Auth from './components/Auth';
 import Notes from './components/Notes';
 import Diary from './components/Diary';
+import Journals from './components/Journals';
 import { isAuthenticated, clearAuthState, getUsername } from './lib/auth';
 import './App.css';
 
@@ -37,6 +38,12 @@ function Layout({ children }: { children: React.ReactNode }) {
             className={`nav-link ${location.pathname === '/diary' ? 'active' : ''}`}
           >
             📖 Diary
+          </Link>
+          <Link 
+            to="/journals" 
+            className={`nav-link ${location.pathname === '/journals' ? 'active' : ''}`}
+          >
+            📔 Journals
           </Link>
         </div>
 
@@ -97,6 +104,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Diary />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/journals"
+          element={
+            <ProtectedRoute>
+              <Journals />
             </ProtectedRoute>
           }
         />
