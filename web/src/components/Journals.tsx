@@ -788,6 +788,22 @@ export default function Journals() {
                 <>
                   <h1>{selectedJournal.title}</h1>
                   <div className="journal-header-actions">
+                    <label className="daily-mode-toggle">
+                      <input
+                        type="checkbox"
+                        checked={selectedJournal.dailyMode || false}
+                        onChange={handleToggleDailyMode}
+                        disabled={saving}
+                      />
+                      <span>Daily Mode</span>
+                      <button
+                        className="help-button"
+                        title="In Daily Mode, each entry describes a specific day (identified by a date). The describedDay field becomes required and entries are sorted by day."
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        ?
+                      </button>
+                    </label>
                     <button onClick={handleStartRenameJournal} className="btn-rename-journal">
                       ✏️ Rename
                     </button>
@@ -800,27 +816,6 @@ export default function Journals() {
                   </div>
                 </>
               )}
-            </div>
-
-            {/* Journal Settings */}
-            <div className="journal-settings">
-              <div className="setting-row">
-                <label className="setting-label">
-                  <input
-                    type="checkbox"
-                    checked={selectedJournal.dailyMode || false}
-                    onChange={handleToggleDailyMode}
-                    disabled={saving}
-                  />
-                  <span>Daily Mode</span>
-                </label>
-                <button
-                  className="help-button"
-                  title="In Daily Mode, each entry describes a specific day (identified by a date). The describedDay field becomes required and entries are sorted by day."
-                >
-                  ?
-                </button>
-              </div>
             </div>
 
             {/* Validation Results */}

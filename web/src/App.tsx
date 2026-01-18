@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import Auth from './components/Auth';
 import Notes from './components/Notes';
-import Diary from './components/Diary';
 import Journals from './components/Journals';
 import { isAuthenticated, clearAuthState, getUsername } from './lib/auth';
 import './App.css';
@@ -32,12 +31,6 @@ function Layout({ children }: { children: React.ReactNode }) {
             className={`nav-link ${location.pathname === '/notes' ? 'active' : ''}`}
           >
             📝 Notes
-          </Link>
-          <Link 
-            to="/diary" 
-            className={`nav-link ${location.pathname === '/diary' ? 'active' : ''}`}
-          >
-            📖 Diary
           </Link>
           <Link 
             to="/journals" 
@@ -95,15 +88,6 @@ function App() {
           element={
             <ProtectedRoute>
               <Notes />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/diary"
-          element={
-            <ProtectedRoute>
-              <Diary />
             </ProtectedRoute>
           }
         />
