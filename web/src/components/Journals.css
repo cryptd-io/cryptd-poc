@@ -385,6 +385,35 @@
     box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
 }
 
+.entry-edit-date {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.entry-edit-date label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+}
+
+.entry-date-input {
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: white;
+}
+
+.entry-date-input:focus {
+    outline: none;
+    border-color: #f093fb;
+    box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
+}
+
 .entry-footer {
     display: flex;
     justify-content: space-between;

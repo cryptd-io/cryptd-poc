@@ -31,6 +31,7 @@ export default function Journals() {
   const [newEntry, setNewEntry] = useState('');
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [editCreatedAt, setEditCreatedAt] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -61,7 +62,13 @@ export default function Journals() {
         
         const data: JournalsData = JSON.parse(decrypted);
         // Sort journals by updatedAt descending (most recently updated first)
-        const sorted = (data.journals || []).sort((a, b) => b.updatedAt - a.updatedAt);
+        // Also sort entries within each journal by createdAt descending
+        const sorted = (data.journals || [])
+          .map(journal => ({
+            ...journal,
+            entries: journal.entries.sort((a, b) => b.createdAt - a.createdAt)
+          }))
+          .sort((a, b) => b.updatedAt - a.updatedAt);
         setJournals(sorted);
       } catch (err) {
         // Blob doesn't exist yet (404), start with empty journals
@@ -187,7 +194,7 @@ export default function Journals() {
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: [entry, ...selectedJournal.entries],
+        entries: [entry, ...selectedJournal.entries].sort((a, b) => b.createdAt - a.createdAt),
         updatedAt: now,
       };
 
@@ -210,6 +217,7 @@ export default function Journals() {
   const handleStartEdit = (entry: JournalEntry) => {
     setEditingEntryId(entry.id);
     setEditContent(entry.content);
+    setEditCreatedAt(entry.createdAt);
   };
 
   const handleSaveEdit = async (entryId: string) => {
@@ -226,9 +234,9 @@ export default function Journals() {
       const now = Date.now();
       const updatedEntries = selectedJournal.entries.map((entry) =>
         entry.id === entryId
-          ? { ...entry, content: editContent, updatedAt: now }
+          ? { ...entry, content: editContent, createdAt: editCreatedAt, updatedAt: now }
           : entry
-      );
+      ).sort((a, b) => b.createdAt - a.createdAt);
 
       const updatedJournal = {
         ...selectedJournal,
@@ -245,6 +253,7 @@ export default function Journals() {
       setSelectedJournal(updatedJournal);
       setEditingEntryId(null);
       setEditContent('');
+      setEditCreatedAt(0);
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to update entry');
@@ -256,6 +265,7 @@ export default function Journals() {
   const handleCancelEdit = () => {
     setEditingEntryId(null);
     setEditContent('');
+    setEditCreatedAt(0);
   };
 
   const handleDeleteEntry = async (entryId: string) => {
@@ -271,7 +281,7 @@ export default function Journals() {
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: updatedEntries,
+        entries: updatedEntries.sort((a, b) => b.createdAt - a.createdAt),
         updatedAt: now,
       };
 
@@ -318,6 +328,20 @@ export default function Journals() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const timestampToDateTimeLocal = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const dateTimeLocalToTimestamp = (dateTimeLocal: string) => {
+    return new Date(dateTimeLocal).getTime();
   };
 
   const handleExport = () => {
@@ -379,8 +403,13 @@ export default function Journals() {
         setSaving(true);
         setError('');
 
-        // Sort imported journals
-        const sorted = importData.journals.sort((a, b) => b.updatedAt - a.updatedAt);
+        // Sort imported journals and their entries
+        const sorted = importData.journals
+          .map(journal => ({
+            ...journal,
+            entries: journal.entries.sort((a, b) => b.createdAt - a.createdAt)
+          }))
+          .sort((a, b) => b.updatedAt - a.updatedAt);
         
         // Save imported journals (overwrites existing data)
         await saveJournals(sorted);
@@ -566,12 +595,24 @@ export default function Journals() {
                     </div>
 
                     {editingEntryId === entry.id ? (
-                      <textarea
-                        className="entry-edit-input"
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        rows={6}
-                      />
+                      <>
+                        <div className="entry-edit-date">
+                          <label htmlFor={`date-${entry.id}`}>Created Date:</label>
+                          <input
+                            id={`date-${entry.id}`}
+                            type="datetime-local"
+                            value={timestampToDateTimeLocal(editCreatedAt)}
+                            onChange={(e) => setEditCreatedAt(dateTimeLocalToTimestamp(e.target.value))}
+                            className="entry-date-input"
+                          />
+                        </div>
+                        <textarea
+                          className="entry-edit-input"
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          rows={6}
+                        />
+                      </>
                     ) : (
                       <div className="entry-content">{entry.content}</div>
                     )}
