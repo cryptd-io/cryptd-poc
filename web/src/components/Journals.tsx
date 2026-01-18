@@ -4,11 +4,14 @@ import { encryptBlob, decryptBlob } from '../lib/crypto';
 import { upsertBlob, getBlob } from '../lib/api';
 import './Journals.css';
 
+type SortField = 'createdAt' | 'updatedAt' | 'day';
+
 interface JournalEntry {
   id: string;
   content: string;
   createdAt: number;
   updatedAt: number;
+  day?: string; // Format: YYYY-MM-DD - describes a specific day
 }
 
 interface Journal {
@@ -17,6 +20,14 @@ interface Journal {
   entries: JournalEntry[];
   createdAt: number;
   updatedAt: number;
+  dailyMode?: boolean; // Whether this journal is in daily mode (each entry describes a day)
+  sortBy?: SortField; // Which field to sort entries by
+}
+
+interface ValidationIssue {
+  entryId: string;
+  entryIndex: number;
+  issues: string[];
 }
 
 interface JournalsData {
@@ -37,6 +48,10 @@ export default function Journals() {
   const [error, setError] = useState('');
   const [isCreatingJournal, setIsCreatingJournal] = useState(false);
   const [newJournalTitle, setNewJournalTitle] = useState('');
+  const [newEntryDay, setNewEntryDay] = useState('');
+  const [editEntryDay, setEditEntryDay] = useState('');
+  const [showValidation, setShowValidation] = useState(false);
+  const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
 
   // Load journals on mount
   useEffect(() => {
@@ -62,11 +77,11 @@ export default function Journals() {
         
         const data: JournalsData = JSON.parse(decrypted);
         // Sort journals by updatedAt descending (most recently updated first)
-        // Also sort entries within each journal by createdAt descending
+        // Also sort entries within each journal by their configured sort field
         const sorted = (data.journals || [])
           .map(journal => ({
             ...journal,
-            entries: journal.entries.sort((a, b) => b.createdAt - a.createdAt)
+            entries: sortEntries(journal.entries, journal.sortBy || 'createdAt')
           }))
           .sort((a, b) => b.updatedAt - a.updatedAt);
         setJournals(sorted);
@@ -85,6 +100,24 @@ export default function Journals() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const sortEntries = (entries: JournalEntry[], sortBy: SortField): JournalEntry[] => {
+    return [...entries].sort((a, b) => {
+      if (sortBy === 'day') {
+        // For day, sort by date string (YYYY-MM-DD format sorts correctly)
+        // Entries without day go to the end
+        const dayA = a.day || '';
+        const dayB = b.day || '';
+        if (!dayA && !dayB) return b.createdAt - a.createdAt;
+        if (!dayA) return 1;
+        if (!dayB) return -1;
+        return dayB.localeCompare(dayA); // Descending order
+      } else {
+        // For createdAt and updatedAt, sort numerically descending
+        return b[sortBy] - a[sortBy];
+      }
+    });
   };
 
   const saveJournals = async (updatedJournals: Journal[]) => {
@@ -149,8 +182,131 @@ export default function Journals() {
   const handleSelectJournal = (journal: Journal) => {
     setSelectedJournal(journal);
     setNewEntry('');
+    setNewEntryDay('');
     setEditingEntryId(null);
     setEditContent('');
+    setShowValidation(false);
+    setValidationIssues([]);
+  };
+
+  const handleToggleDailyMode = async () => {
+    if (!selectedJournal) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedJournal = {
+        ...selectedJournal,
+        dailyMode: !selectedJournal.dailyMode,
+        sortBy: (!selectedJournal.dailyMode ? 'day' : 'createdAt') as SortField,
+        updatedAt: now,
+      };
+
+      const updatedJournals = journals.map((j) =>
+        j.id === selectedJournal.id ? updatedJournal : j
+      );
+
+      await saveJournals(updatedJournals);
+      setJournals(updatedJournals);
+      setSelectedJournal(updatedJournal);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to update journal settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangeSortBy = async (newSortBy: SortField) => {
+    if (!selectedJournal) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedJournal = {
+        ...selectedJournal,
+        sortBy: newSortBy,
+        entries: sortEntries(selectedJournal.entries, newSortBy),
+        updatedAt: now,
+      };
+
+      const updatedJournals = journals.map((j) =>
+        j.id === selectedJournal.id ? updatedJournal : j
+      );
+
+      await saveJournals(updatedJournals);
+      setJournals(updatedJournals);
+      setSelectedJournal(updatedJournal);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to update sort order');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const validateDayUnique = (journal: Journal, day: string, excludeEntryId?: string): boolean => {
+    return !journal.entries.some(
+      entry => entry.day === day && entry.id !== excludeEntryId
+    );
+  };
+
+  const validateJournal = () => {
+    if (!selectedJournal) return;
+
+    const issues: ValidationIssue[] = [];
+
+    selectedJournal.entries.forEach((entry, index) => {
+      const entryIssues: string[] = [];
+
+      // Check required fields
+      if (!entry.id) entryIssues.push('Missing ID');
+      if (entry.content === undefined || entry.content === null) entryIssues.push('Missing content');
+      if (entry.content && !entry.content.trim()) entryIssues.push('Content is empty');
+      if (!entry.createdAt) entryIssues.push('Missing createdAt timestamp');
+      if (!entry.updatedAt) entryIssues.push('Missing updatedAt timestamp');
+
+      // Check day field
+      if (selectedJournal.dailyMode) {
+        // In daily mode, day field is required
+        if (!entry.day) {
+          entryIssues.push('Missing day field (required in daily mode)');
+        } else {
+          // Check date format
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (!dateRegex.test(entry.day)) {
+            entryIssues.push(`Invalid day format: "${entry.day}" (expected YYYY-MM-DD)`);
+          }
+        }
+      } else {
+        // In normal mode, day field is optional, but if present - validate format
+        if (entry.day) {
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (!dateRegex.test(entry.day)) {
+            entryIssues.push(`Invalid day format: "${entry.day}" (expected YYYY-MM-DD)`);
+          }
+        }
+      }
+
+      if (entryIssues.length > 0) {
+        issues.push({
+          entryId: entry.id || `unknown-${index}`,
+          entryIndex: index,
+          issues: entryIssues,
+        });
+      }
+    });
+
+    setValidationIssues(issues);
+    setShowValidation(true);
+
+    if (issues.length === 0) {
+      alert('✅ All entries are valid! No issues found.');
+    }
   };
 
   const handleDeleteJournal = async () => {
@@ -180,6 +336,14 @@ export default function Journals() {
       return;
     }
 
+    // Validate day if journal is in daily mode
+    if (selectedJournal.dailyMode && newEntryDay) {
+      if (!validateDayUnique(selectedJournal, newEntryDay)) {
+        setError(`An entry for ${newEntryDay} already exists in this journal`);
+        return;
+      }
+    }
+
     setSaving(true);
     setError('');
 
@@ -190,11 +354,12 @@ export default function Journals() {
         content: newEntry,
         createdAt: now,
         updatedAt: now,
+        ...(selectedJournal.dailyMode && newEntryDay ? { day: newEntryDay } : {}),
       };
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: [entry, ...selectedJournal.entries].sort((a, b) => b.createdAt - a.createdAt),
+        entries: sortEntries([entry, ...selectedJournal.entries], selectedJournal.sortBy || 'createdAt'),
         updatedAt: now,
       };
 
@@ -206,6 +371,7 @@ export default function Journals() {
       setJournals(updatedJournals);
       setSelectedJournal(updatedJournal);
       setNewEntry('');
+      setNewEntryDay('');
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to add entry');
@@ -218,6 +384,7 @@ export default function Journals() {
     setEditingEntryId(entry.id);
     setEditContent(entry.content);
     setEditCreatedAt(entry.createdAt);
+    setEditEntryDay(entry.day || '');
   };
 
   const handleSaveEdit = async (entryId: string) => {
@@ -227,6 +394,14 @@ export default function Journals() {
       return;
     }
 
+    // Validate day if journal is in daily mode
+    if (selectedJournal.dailyMode && editEntryDay) {
+      if (!validateDayUnique(selectedJournal, editEntryDay, entryId)) {
+        setError(`An entry for ${editEntryDay} already exists in this journal`);
+        return;
+      }
+    }
+
     setSaving(true);
     setError('');
 
@@ -234,13 +409,19 @@ export default function Journals() {
       const now = Date.now();
       const updatedEntries = selectedJournal.entries.map((entry) =>
         entry.id === entryId
-          ? { ...entry, content: editContent, createdAt: editCreatedAt, updatedAt: now }
+          ? {
+              ...entry,
+              content: editContent,
+              createdAt: editCreatedAt,
+              updatedAt: now,
+              ...(selectedJournal.dailyMode && editEntryDay ? { day: editEntryDay } : {}),
+            }
           : entry
-      ).sort((a, b) => b.createdAt - a.createdAt);
+      );
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: updatedEntries,
+        entries: sortEntries(updatedEntries, selectedJournal.sortBy || 'createdAt'),
         updatedAt: now,
       };
 
@@ -254,6 +435,7 @@ export default function Journals() {
       setEditingEntryId(null);
       setEditContent('');
       setEditCreatedAt(0);
+      setEditEntryDay('');
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to update entry');
@@ -266,6 +448,7 @@ export default function Journals() {
     setEditingEntryId(null);
     setEditContent('');
     setEditCreatedAt(0);
+    setEditEntryDay('');
   };
 
   const handleDeleteEntry = async (entryId: string) => {
@@ -281,7 +464,7 @@ export default function Journals() {
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: updatedEntries.sort((a, b) => b.createdAt - a.createdAt),
+        entries: sortEntries(updatedEntries, selectedJournal.sortBy || 'createdAt'),
         updatedAt: now,
       };
 
@@ -407,7 +590,7 @@ export default function Journals() {
         const sorted = importData.journals
           .map(journal => ({
             ...journal,
-            entries: journal.entries.sort((a, b) => b.createdAt - a.createdAt)
+            entries: sortEntries(journal.entries, journal.sortBy || 'createdAt')
           }))
           .sort((a, b) => b.updatedAt - a.updatedAt);
         
@@ -517,15 +700,93 @@ export default function Journals() {
           <>
             <div className="journal-header">
               <h1>{selectedJournal.title}</h1>
-              <button onClick={handleDeleteJournal} className="btn-delete-journal">
-                Delete Journal
-              </button>
+              <div className="journal-header-actions">
+                <button onClick={validateJournal} className="btn-validate" title="Validate journal entries">
+                  ✓ Validate
+                </button>
+                <button onClick={handleDeleteJournal} className="btn-delete-journal">
+                  Delete Journal
+                </button>
+              </div>
             </div>
+
+            {/* Journal Settings */}
+            <div className="journal-settings">
+              <div className="setting-row">
+                <label className="setting-label">
+                  <input
+                    type="checkbox"
+                    checked={selectedJournal.dailyMode || false}
+                    onChange={handleToggleDailyMode}
+                    disabled={saving}
+                  />
+                  <span>Daily Mode</span>
+                </label>
+                <button
+                  className="help-button"
+                  title="In Daily Mode, each entry describes a specific day (identified by a date). The day field becomes required and entries can be sorted by day."
+                >
+                  ?
+                </button>
+              </div>
+              
+              <div className="setting-row">
+                <label className="setting-label-text">Sort by:</label>
+                <select
+                  value={selectedJournal.sortBy || 'createdAt'}
+                  onChange={(e) => handleChangeSortBy(e.target.value as SortField)}
+                  disabled={saving}
+                  className="sort-select"
+                >
+                  <option value="createdAt">Created Date</option>
+                  <option value="updatedAt">Last Updated</option>
+                  {selectedJournal.dailyMode && <option value="day">Day</option>}
+                </select>
+              </div>
+            </div>
+
+            {/* Validation Results */}
+            {showValidation && validationIssues.length > 0 && (
+              <div className="validation-panel">
+                <div className="validation-header">
+                  <h3>⚠️ Validation Issues ({validationIssues.length})</h3>
+                  <button onClick={() => setShowValidation(false)} className="btn-close-validation">
+                    ✕
+                  </button>
+                </div>
+                <div className="validation-list">
+                  {validationIssues.map((issue) => (
+                    <div key={issue.entryId} className="validation-issue">
+                      <div className="validation-issue-header">
+                        Entry #{issue.entryIndex + 1} (ID: {issue.entryId})
+                      </div>
+                      <ul className="validation-issue-list">
+                        {issue.issues.map((issueText, idx) => (
+                          <li key={idx}>{issueText}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {error && <div className="error-message">{error}</div>}
 
             {/* New Entry Form */}
             <div className="new-entry-card">
+              {selectedJournal.dailyMode && (
+                <div className="entry-date-input-row">
+                  <label htmlFor="new-entry-day">Day:</label>
+                  <input
+                    id="new-entry-day"
+                    type="date"
+                    value={newEntryDay}
+                    onChange={(e) => setNewEntryDay(e.target.value)}
+                    className="date-input"
+                  />
+                </div>
+              )}
               <textarea
                 className="new-entry-input"
                 placeholder="Write your journal entry..."
@@ -556,7 +817,12 @@ export default function Journals() {
                 selectedJournal.entries.map((entry) => (
                   <div key={entry.id} className="entry-card">
                     <div className="entry-header">
-                      <div className="entry-date">{formatDate(entry.createdAt)}</div>
+                      <div className="entry-date-info">
+                        {selectedJournal.dailyMode && entry.day && (
+                          <div className="entry-day">📅 {entry.day}</div>
+                        )}
+                        <div className="entry-date">{formatDate(entry.createdAt)}</div>
+                      </div>
                       <div className="entry-actions">
                         {editingEntryId === entry.id ? (
                           <>
@@ -596,6 +862,18 @@ export default function Journals() {
 
                     {editingEntryId === entry.id ? (
                       <>
+                        {selectedJournal.dailyMode && (
+                          <div className="entry-edit-date">
+                            <label htmlFor={`day-${entry.id}`}>Day:</label>
+                            <input
+                              id={`day-${entry.id}`}
+                              type="date"
+                              value={editEntryDay}
+                              onChange={(e) => setEditEntryDay(e.target.value)}
+                              className="date-input"
+                            />
+                          </div>
+                        )}
                         <div className="entry-edit-date">
                           <label htmlFor={`date-${entry.id}`}>Created Date:</label>
                           <input
