@@ -21,7 +21,6 @@ interface Journal {
   createdAt: number;
   updatedAt: number;
   dailyMode?: boolean; // Whether this journal is in daily mode (each entry describes a day)
-  sortBy?: SortField; // Kept for backward compatibility, but not used in UI
 }
 
 interface ValidationIssue {
@@ -42,7 +41,6 @@ export default function Journals() {
   const [newEntry, setNewEntry] = useState('');
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
-  const [editCreatedAt, setEditCreatedAt] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -52,11 +50,41 @@ export default function Journals() {
   const [editEntryDescribedDay, setEditEntryDescribedDay] = useState('');
   const [showValidation, setShowValidation] = useState(false);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
+  const [isRenamingJournal, setIsRenamingJournal] = useState(false);
+  const [renameJournalTitle, setRenameJournalTitle] = useState('');
 
   // Load journals on mount
   useEffect(() => {
     loadJournals();
   }, []);
+
+  const cleanJournal = (journal: Journal): Journal => {
+    const allowedJournalFields = ['id', 'title', 'entries', 'createdAt', 'updatedAt', 'dailyMode'];
+    const allowedEntryFields = ['id', 'content', 'createdAt', 'updatedAt', 'describedDay'];
+    
+    // Clean journal fields
+    const cleanedJournal: any = {};
+    for (const key of allowedJournalFields) {
+      if (key in journal) {
+        cleanedJournal[key] = (journal as any)[key];
+      }
+    }
+    
+    // Clean entry fields
+    if (Array.isArray(cleanedJournal.entries)) {
+      cleanedJournal.entries = cleanedJournal.entries.map((entry: any) => {
+        const cleanedEntry: any = {};
+        for (const key of allowedEntryFields) {
+          if (key in entry) {
+            cleanedEntry[key] = entry[key];
+          }
+        }
+        return cleanedEntry;
+      });
+    }
+    
+    return cleanedJournal as Journal;
+  };
 
   const loadJournals = async () => {
     setLoading(true);
@@ -76,9 +104,10 @@ export default function Journals() {
         );
         
         const data: JournalsData = JSON.parse(decrypted);
-        // Sort journals by updatedAt descending (most recently updated first)
+        // Clean up unknown fields and sort journals by updatedAt descending (most recently updated first)
         // Also sort entries within each journal by their configured sort field
         const sorted = (data.journals || [])
+          .map(journal => cleanJournal(journal))
           .map(journal => ({
             ...journal,
             entries: sortEntries(journal.entries, getSortField(journal))
@@ -184,10 +213,19 @@ export default function Journals() {
     setNewJournalTitle('');
   };
 
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleSelectJournal = (journal: Journal) => {
     setSelectedJournal(journal);
     setNewEntry('');
-    setNewEntryDescribedDay('');
+    // Auto-fill today's date if journal is in daily mode
+    setNewEntryDescribedDay(journal.dailyMode ? getTodayDate() : '');
     setEditingEntryId(null);
     setEditContent('');
     setShowValidation(false);
@@ -202,10 +240,11 @@ export default function Journals() {
 
     try {
       const now = Date.now();
+      const newDailyMode = !selectedJournal.dailyMode;
       const updatedJournal = {
         ...selectedJournal,
-        dailyMode: !selectedJournal.dailyMode,
-        entries: sortEntries(selectedJournal.entries, !selectedJournal.dailyMode ? 'describedDay' : 'createdAt'),
+        dailyMode: newDailyMode,
+        entries: sortEntries(selectedJournal.entries, newDailyMode ? 'describedDay' : 'createdAt'),
         updatedAt: now,
       };
 
@@ -216,6 +255,13 @@ export default function Journals() {
       await saveJournals(updatedJournals);
       setJournals(updatedJournals);
       setSelectedJournal(updatedJournal);
+      
+      // Auto-fill today's date when enabling daily mode
+      if (newDailyMode) {
+        setNewEntryDescribedDay(getTodayDate());
+      } else {
+        setNewEntryDescribedDay('');
+      }
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to update journal settings');
@@ -292,6 +338,52 @@ export default function Journals() {
     }
   };
 
+  const handleStartRenameJournal = () => {
+    if (!selectedJournal) return;
+    setIsRenamingJournal(true);
+    setRenameJournalTitle(selectedJournal.title);
+  };
+
+  const handleSaveRenameJournal = async () => {
+    if (!selectedJournal) return;
+    if (!renameJournalTitle.trim()) {
+      setError('Journal title is required');
+      return;
+    }
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedJournal = {
+        ...selectedJournal,
+        title: renameJournalTitle,
+        updatedAt: now,
+      };
+
+      const updatedJournals = journals.map((j) =>
+        j.id === selectedJournal.id ? updatedJournal : j
+      ).sort((a, b) => b.updatedAt - a.updatedAt);
+
+      await saveJournals(updatedJournals);
+      setJournals(updatedJournals);
+      setSelectedJournal(updatedJournal);
+      setIsRenamingJournal(false);
+      setRenameJournalTitle('');
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to rename journal');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelRenameJournal = () => {
+    setIsRenamingJournal(false);
+    setRenameJournalTitle('');
+  };
+
   const handleDeleteJournal = async () => {
     if (!selectedJournal) return;
     if (!confirm(`Delete journal "${selectedJournal.title}"? This will delete all entries.`)) return;
@@ -354,7 +446,8 @@ export default function Journals() {
       setJournals(updatedJournals);
       setSelectedJournal(updatedJournal);
       setNewEntry('');
-      setNewEntryDescribedDay('');
+      // Keep today's date in daily mode, clear otherwise
+      setNewEntryDescribedDay(selectedJournal.dailyMode ? getTodayDate() : '');
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to add entry');
@@ -366,7 +459,6 @@ export default function Journals() {
   const handleStartEdit = (entry: JournalEntry) => {
     setEditingEntryId(entry.id);
     setEditContent(entry.content);
-    setEditCreatedAt(entry.createdAt);
     setEditEntryDescribedDay(entry.describedDay || '');
   };
 
@@ -395,7 +487,6 @@ export default function Journals() {
           ? {
               ...entry,
               content: editContent,
-              createdAt: editCreatedAt,
               updatedAt: now,
               ...(selectedJournal.dailyMode && editEntryDescribedDay ? { describedDay: editEntryDescribedDay } : {}),
             }
@@ -417,7 +508,6 @@ export default function Journals() {
       setSelectedJournal(updatedJournal);
       setEditingEntryId(null);
       setEditContent('');
-      setEditCreatedAt(0);
       setEditEntryDescribedDay('');
     } catch (err) {
       const error = err as Error;
@@ -430,7 +520,6 @@ export default function Journals() {
   const handleCancelEdit = () => {
     setEditingEntryId(null);
     setEditContent('');
-    setEditCreatedAt(0);
     setEditEntryDescribedDay('');
   };
 
@@ -494,20 +583,6 @@ export default function Journals() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const timestampToDateTimeLocal = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  const dateTimeLocalToTimestamp = (dateTimeLocal: string) => {
-    return new Date(dateTimeLocal).getTime();
   };
 
   const handleExport = () => {
@@ -682,15 +757,49 @@ export default function Journals() {
         {selectedJournal ? (
           <>
             <div className="journal-header">
-              <h1>{selectedJournal.title}</h1>
-              <div className="journal-header-actions">
-                <button onClick={validateJournal} className="btn-validate" title="Validate journal entries">
-                  ✓ Validate
-                </button>
-                <button onClick={handleDeleteJournal} className="btn-delete-journal">
-                  Delete Journal
-                </button>
-              </div>
+              {isRenamingJournal ? (
+                <div className="rename-journal-form">
+                  <input
+                    type="text"
+                    className="rename-journal-input"
+                    placeholder="Journal title..."
+                    value={renameJournalTitle}
+                    onChange={(e) => setRenameJournalTitle(e.target.value)}
+                    autoFocus
+                  />
+                  <div className="rename-actions">
+                    <button
+                      onClick={handleSaveRenameJournal}
+                      disabled={saving}
+                      className="btn-save-rename"
+                    >
+                      {saving ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={handleCancelRenameJournal}
+                      disabled={saving}
+                      className="btn-cancel-rename"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h1>{selectedJournal.title}</h1>
+                  <div className="journal-header-actions">
+                    <button onClick={handleStartRenameJournal} className="btn-rename-journal">
+                      ✏️ Rename
+                    </button>
+                    <button onClick={validateJournal} className="btn-validate" title="Validate journal entries">
+                      ✓ Validate
+                    </button>
+                    <button onClick={handleDeleteJournal} className="btn-delete-journal">
+                      Delete Journal
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Journal Settings */}
@@ -843,16 +952,6 @@ export default function Journals() {
                             />
                           </div>
                         )}
-                        <div className="entry-edit-date">
-                          <label htmlFor={`date-${entry.id}`}>Created Date:</label>
-                          <input
-                            id={`date-${entry.id}`}
-                            type="datetime-local"
-                            value={timestampToDateTimeLocal(editCreatedAt)}
-                            onChange={(e) => setEditCreatedAt(dateTimeLocalToTimestamp(e.target.value))}
-                            className="entry-date-input"
-                          />
-                        </div>
                         <textarea
                           className="entry-edit-input"
                           value={editContent}
