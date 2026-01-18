@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { loadAuthState } from '../lib/auth';
 import { encryptBlob, decryptBlob } from '../lib/crypto';
 import { upsertBlob, getBlob } from '../lib/api';
@@ -53,27 +53,45 @@ export default function Journals() {
   const [isRenamingJournal, setIsRenamingJournal] = useState(false);
   const [renameJournalTitle, setRenameJournalTitle] = useState('');
 
-  // Load journals on mount
-  useEffect(() => {
-    loadJournals();
-  }, []);
+  const sortEntries = (entries: JournalEntry[], sortBy: SortField): JournalEntry[] => {
+    return [...entries].sort((a, b) => {
+      if (sortBy === 'describedDay') {
+        // For describedDay, sort by date string (YYYY-MM-DD format sorts correctly)
+        // Entries without describedDay go to the end
+        const dayA = a.describedDay || '';
+        const dayB = b.describedDay || '';
+        if (!dayA && !dayB) return b.createdAt - a.createdAt;
+        if (!dayA) return 1;
+        if (!dayB) return -1;
+        return dayB.localeCompare(dayA); // Descending order
+      } else {
+        // For createdAt and updatedAt, sort numerically descending
+        return b[sortBy] - a[sortBy];
+      }
+    });
+  };
+
+  const getSortField = (journal: Journal): SortField => {
+    // Auto-determine sort field based on mode
+    return journal.dailyMode ? 'describedDay' : 'createdAt';
+  };
 
   const cleanJournal = (journal: Journal): Journal => {
     const allowedJournalFields = ['id', 'title', 'entries', 'createdAt', 'updatedAt', 'dailyMode'];
     const allowedEntryFields = ['id', 'content', 'createdAt', 'updatedAt', 'describedDay'];
     
     // Clean journal fields
-    const cleanedJournal: any = {};
+    const cleanedJournal: Record<string, unknown> = {};
     for (const key of allowedJournalFields) {
       if (key in journal) {
-        cleanedJournal[key] = (journal as any)[key];
+        cleanedJournal[key] = (journal as unknown as Record<string, unknown>)[key];
       }
     }
     
     // Clean entry fields
     if (Array.isArray(cleanedJournal.entries)) {
-      cleanedJournal.entries = cleanedJournal.entries.map((entry: any) => {
-        const cleanedEntry: any = {};
+      cleanedJournal.entries = cleanedJournal.entries.map((entry: Record<string, unknown>) => {
+        const cleanedEntry: Record<string, unknown> = {};
         for (const key of allowedEntryFields) {
           if (key in entry) {
             cleanedEntry[key] = entry[key];
@@ -83,10 +101,10 @@ export default function Journals() {
       });
     }
     
-    return cleanedJournal as Journal;
+    return cleanedJournal as unknown as Journal;
   };
 
-  const loadJournals = async () => {
+  const loadJournals = useCallback(async () => {
     setLoading(true);
     setError('');
     
@@ -129,30 +147,12 @@ export default function Journals() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const sortEntries = (entries: JournalEntry[], sortBy: SortField): JournalEntry[] => {
-    return [...entries].sort((a, b) => {
-      if (sortBy === 'describedDay') {
-        // For describedDay, sort by date string (YYYY-MM-DD format sorts correctly)
-        // Entries without describedDay go to the end
-        const dayA = a.describedDay || '';
-        const dayB = b.describedDay || '';
-        if (!dayA && !dayB) return b.createdAt - a.createdAt;
-        if (!dayA) return 1;
-        if (!dayB) return -1;
-        return dayB.localeCompare(dayA); // Descending order
-      } else {
-        // For createdAt and updatedAt, sort numerically descending
-        return b[sortBy] - a[sortBy];
-      }
-    });
-  };
-
-  const getSortField = (journal: Journal): SortField => {
-    // Auto-determine sort field based on mode
-    return journal.dailyMode ? 'describedDay' : 'createdAt';
-  };
+  // Load journals on mount
+  useEffect(() => {
+    loadJournals();
+  }, [loadJournals]);
 
   const saveJournals = async (updatedJournals: Journal[]) => {
     const authState = loadAuthState();
