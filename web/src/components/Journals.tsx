@@ -4,14 +4,14 @@ import { encryptBlob, decryptBlob } from '../lib/crypto';
 import { upsertBlob, getBlob } from '../lib/api';
 import './Journals.css';
 
-type SortField = 'createdAt' | 'updatedAt' | 'day';
+type SortField = 'createdAt' | 'updatedAt' | 'describedDay';
 
 interface JournalEntry {
   id: string;
   content: string;
   createdAt: number;
   updatedAt: number;
-  day?: string; // Format: YYYY-MM-DD - describes a specific day
+  describedDay?: string; // Format: YYYY-MM-DD - describes a specific day
 }
 
 interface Journal {
@@ -21,7 +21,7 @@ interface Journal {
   createdAt: number;
   updatedAt: number;
   dailyMode?: boolean; // Whether this journal is in daily mode (each entry describes a day)
-  sortBy?: SortField; // Which field to sort entries by
+  sortBy?: SortField; // Kept for backward compatibility, but not used in UI
 }
 
 interface ValidationIssue {
@@ -48,8 +48,8 @@ export default function Journals() {
   const [error, setError] = useState('');
   const [isCreatingJournal, setIsCreatingJournal] = useState(false);
   const [newJournalTitle, setNewJournalTitle] = useState('');
-  const [newEntryDay, setNewEntryDay] = useState('');
-  const [editEntryDay, setEditEntryDay] = useState('');
+  const [newEntryDescribedDay, setNewEntryDescribedDay] = useState('');
+  const [editEntryDescribedDay, setEditEntryDescribedDay] = useState('');
   const [showValidation, setShowValidation] = useState(false);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
 
@@ -81,7 +81,7 @@ export default function Journals() {
         const sorted = (data.journals || [])
           .map(journal => ({
             ...journal,
-            entries: sortEntries(journal.entries, journal.sortBy || 'createdAt')
+            entries: sortEntries(journal.entries, getSortField(journal))
           }))
           .sort((a, b) => b.updatedAt - a.updatedAt);
         setJournals(sorted);
@@ -104,11 +104,11 @@ export default function Journals() {
 
   const sortEntries = (entries: JournalEntry[], sortBy: SortField): JournalEntry[] => {
     return [...entries].sort((a, b) => {
-      if (sortBy === 'day') {
-        // For day, sort by date string (YYYY-MM-DD format sorts correctly)
-        // Entries without day go to the end
-        const dayA = a.day || '';
-        const dayB = b.day || '';
+      if (sortBy === 'describedDay') {
+        // For describedDay, sort by date string (YYYY-MM-DD format sorts correctly)
+        // Entries without describedDay go to the end
+        const dayA = a.describedDay || '';
+        const dayB = b.describedDay || '';
         if (!dayA && !dayB) return b.createdAt - a.createdAt;
         if (!dayA) return 1;
         if (!dayB) return -1;
@@ -118,6 +118,11 @@ export default function Journals() {
         return b[sortBy] - a[sortBy];
       }
     });
+  };
+
+  const getSortField = (journal: Journal): SortField => {
+    // Auto-determine sort field based on mode
+    return journal.dailyMode ? 'describedDay' : 'createdAt';
   };
 
   const saveJournals = async (updatedJournals: Journal[]) => {
@@ -182,7 +187,7 @@ export default function Journals() {
   const handleSelectJournal = (journal: Journal) => {
     setSelectedJournal(journal);
     setNewEntry('');
-    setNewEntryDay('');
+    setNewEntryDescribedDay('');
     setEditingEntryId(null);
     setEditContent('');
     setShowValidation(false);
@@ -200,7 +205,7 @@ export default function Journals() {
       const updatedJournal = {
         ...selectedJournal,
         dailyMode: !selectedJournal.dailyMode,
-        sortBy: (!selectedJournal.dailyMode ? 'day' : 'createdAt') as SortField,
+        entries: sortEntries(selectedJournal.entries, !selectedJournal.dailyMode ? 'describedDay' : 'createdAt'),
         updatedAt: now,
       };
 
@@ -219,39 +224,9 @@ export default function Journals() {
     }
   };
 
-  const handleChangeSortBy = async (newSortBy: SortField) => {
-    if (!selectedJournal) return;
-
-    setSaving(true);
-    setError('');
-
-    try {
-      const now = Date.now();
-      const updatedJournal = {
-        ...selectedJournal,
-        sortBy: newSortBy,
-        entries: sortEntries(selectedJournal.entries, newSortBy),
-        updatedAt: now,
-      };
-
-      const updatedJournals = journals.map((j) =>
-        j.id === selectedJournal.id ? updatedJournal : j
-      );
-
-      await saveJournals(updatedJournals);
-      setJournals(updatedJournals);
-      setSelectedJournal(updatedJournal);
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message || 'Failed to update sort order');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const validateDayUnique = (journal: Journal, day: string, excludeEntryId?: string): boolean => {
+  const validateDescribedDayUnique = (journal: Journal, describedDay: string, excludeEntryId?: string): boolean => {
     return !journal.entries.some(
-      entry => entry.day === day && entry.id !== excludeEntryId
+      entry => entry.describedDay === describedDay && entry.id !== excludeEntryId
     );
   };
 
@@ -259,9 +234,17 @@ export default function Journals() {
     if (!selectedJournal) return;
 
     const issues: ValidationIssue[] = [];
+    const allowedFields = ['id', 'content', 'createdAt', 'updatedAt', 'describedDay'];
 
     selectedJournal.entries.forEach((entry, index) => {
       const entryIssues: string[] = [];
+
+      // Check for extra fields
+      const entryKeys = Object.keys(entry);
+      const extraFields = entryKeys.filter(key => !allowedFields.includes(key));
+      if (extraFields.length > 0) {
+        entryIssues.push(`Extra fields found: ${extraFields.join(', ')}`);
+      }
 
       // Check required fields
       if (!entry.id) entryIssues.push('Missing ID');
@@ -270,24 +253,24 @@ export default function Journals() {
       if (!entry.createdAt) entryIssues.push('Missing createdAt timestamp');
       if (!entry.updatedAt) entryIssues.push('Missing updatedAt timestamp');
 
-      // Check day field
+      // Check describedDay field
       if (selectedJournal.dailyMode) {
-        // In daily mode, day field is required
-        if (!entry.day) {
-          entryIssues.push('Missing day field (required in daily mode)');
+        // In daily mode, describedDay field is required
+        if (!entry.describedDay) {
+          entryIssues.push('Missing describedDay field (required in daily mode)');
         } else {
           // Check date format
           const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (!dateRegex.test(entry.day)) {
-            entryIssues.push(`Invalid day format: "${entry.day}" (expected YYYY-MM-DD)`);
+          if (!dateRegex.test(entry.describedDay)) {
+            entryIssues.push(`Invalid describedDay format: "${entry.describedDay}" (expected YYYY-MM-DD)`);
           }
         }
       } else {
-        // In normal mode, day field is optional, but if present - validate format
-        if (entry.day) {
+        // In normal mode, describedDay field is optional, but if present - validate format
+        if (entry.describedDay) {
           const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-          if (!dateRegex.test(entry.day)) {
-            entryIssues.push(`Invalid day format: "${entry.day}" (expected YYYY-MM-DD)`);
+          if (!dateRegex.test(entry.describedDay)) {
+            entryIssues.push(`Invalid describedDay format: "${entry.describedDay}" (expected YYYY-MM-DD)`);
           }
         }
       }
@@ -336,10 +319,10 @@ export default function Journals() {
       return;
     }
 
-    // Validate day if journal is in daily mode
-    if (selectedJournal.dailyMode && newEntryDay) {
-      if (!validateDayUnique(selectedJournal, newEntryDay)) {
-        setError(`An entry for ${newEntryDay} already exists in this journal`);
+    // Validate describedDay if journal is in daily mode
+    if (selectedJournal.dailyMode && newEntryDescribedDay) {
+      if (!validateDescribedDayUnique(selectedJournal, newEntryDescribedDay)) {
+        setError(`An entry for ${newEntryDescribedDay} already exists in this journal`);
         return;
       }
     }
@@ -354,12 +337,12 @@ export default function Journals() {
         content: newEntry,
         createdAt: now,
         updatedAt: now,
-        ...(selectedJournal.dailyMode && newEntryDay ? { day: newEntryDay } : {}),
+        ...(selectedJournal.dailyMode && newEntryDescribedDay ? { describedDay: newEntryDescribedDay } : {}),
       };
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: sortEntries([entry, ...selectedJournal.entries], selectedJournal.sortBy || 'createdAt'),
+        entries: sortEntries([entry, ...selectedJournal.entries], getSortField(selectedJournal)),
         updatedAt: now,
       };
 
@@ -371,7 +354,7 @@ export default function Journals() {
       setJournals(updatedJournals);
       setSelectedJournal(updatedJournal);
       setNewEntry('');
-      setNewEntryDay('');
+      setNewEntryDescribedDay('');
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to add entry');
@@ -384,7 +367,7 @@ export default function Journals() {
     setEditingEntryId(entry.id);
     setEditContent(entry.content);
     setEditCreatedAt(entry.createdAt);
-    setEditEntryDay(entry.day || '');
+    setEditEntryDescribedDay(entry.describedDay || '');
   };
 
   const handleSaveEdit = async (entryId: string) => {
@@ -394,10 +377,10 @@ export default function Journals() {
       return;
     }
 
-    // Validate day if journal is in daily mode
-    if (selectedJournal.dailyMode && editEntryDay) {
-      if (!validateDayUnique(selectedJournal, editEntryDay, entryId)) {
-        setError(`An entry for ${editEntryDay} already exists in this journal`);
+    // Validate describedDay if journal is in daily mode
+    if (selectedJournal.dailyMode && editEntryDescribedDay) {
+      if (!validateDescribedDayUnique(selectedJournal, editEntryDescribedDay, entryId)) {
+        setError(`An entry for ${editEntryDescribedDay} already exists in this journal`);
         return;
       }
     }
@@ -414,14 +397,14 @@ export default function Journals() {
               content: editContent,
               createdAt: editCreatedAt,
               updatedAt: now,
-              ...(selectedJournal.dailyMode && editEntryDay ? { day: editEntryDay } : {}),
+              ...(selectedJournal.dailyMode && editEntryDescribedDay ? { describedDay: editEntryDescribedDay } : {}),
             }
           : entry
       );
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: sortEntries(updatedEntries, selectedJournal.sortBy || 'createdAt'),
+        entries: sortEntries(updatedEntries, getSortField(selectedJournal)),
         updatedAt: now,
       };
 
@@ -435,7 +418,7 @@ export default function Journals() {
       setEditingEntryId(null);
       setEditContent('');
       setEditCreatedAt(0);
-      setEditEntryDay('');
+      setEditEntryDescribedDay('');
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to update entry');
@@ -448,7 +431,7 @@ export default function Journals() {
     setEditingEntryId(null);
     setEditContent('');
     setEditCreatedAt(0);
-    setEditEntryDay('');
+    setEditEntryDescribedDay('');
   };
 
   const handleDeleteEntry = async (entryId: string) => {
@@ -464,7 +447,7 @@ export default function Journals() {
 
       const updatedJournal = {
         ...selectedJournal,
-        entries: sortEntries(updatedEntries, selectedJournal.sortBy || 'createdAt'),
+        entries: sortEntries(updatedEntries, getSortField(selectedJournal)),
         updatedAt: now,
       };
 
@@ -590,7 +573,7 @@ export default function Journals() {
         const sorted = importData.journals
           .map(journal => ({
             ...journal,
-            entries: sortEntries(journal.entries, journal.sortBy || 'createdAt')
+            entries: sortEntries(journal.entries, getSortField(journal))
           }))
           .sort((a, b) => b.updatedAt - a.updatedAt);
         
@@ -724,24 +707,10 @@ export default function Journals() {
                 </label>
                 <button
                   className="help-button"
-                  title="In Daily Mode, each entry describes a specific day (identified by a date). The day field becomes required and entries can be sorted by day."
+                  title="In Daily Mode, each entry describes a specific day (identified by a date). The describedDay field becomes required and entries are sorted by day."
                 >
                   ?
                 </button>
-              </div>
-              
-              <div className="setting-row">
-                <label className="setting-label-text">Sort by:</label>
-                <select
-                  value={selectedJournal.sortBy || 'createdAt'}
-                  onChange={(e) => handleChangeSortBy(e.target.value as SortField)}
-                  disabled={saving}
-                  className="sort-select"
-                >
-                  <option value="createdAt">Created Date</option>
-                  <option value="updatedAt">Last Updated</option>
-                  {selectedJournal.dailyMode && <option value="day">Day</option>}
-                </select>
               </div>
             </div>
 
@@ -777,12 +746,12 @@ export default function Journals() {
             <div className="new-entry-card">
               {selectedJournal.dailyMode && (
                 <div className="entry-date-input-row">
-                  <label htmlFor="new-entry-day">Day:</label>
+                  <label htmlFor="new-entry-described-day">Described Day:</label>
                   <input
-                    id="new-entry-day"
+                    id="new-entry-described-day"
                     type="date"
-                    value={newEntryDay}
-                    onChange={(e) => setNewEntryDay(e.target.value)}
+                    value={newEntryDescribedDay}
+                    onChange={(e) => setNewEntryDescribedDay(e.target.value)}
                     className="date-input"
                   />
                 </div>
@@ -818,8 +787,8 @@ export default function Journals() {
                   <div key={entry.id} className="entry-card">
                     <div className="entry-header">
                       <div className="entry-date-info">
-                        {selectedJournal.dailyMode && entry.day && (
-                          <div className="entry-day">📅 {entry.day}</div>
+                        {selectedJournal.dailyMode && entry.describedDay && (
+                          <div className="entry-described-day">📅 {entry.describedDay}</div>
                         )}
                         <div className="entry-date">{formatDate(entry.createdAt)}</div>
                       </div>
@@ -864,12 +833,12 @@ export default function Journals() {
                       <>
                         {selectedJournal.dailyMode && (
                           <div className="entry-edit-date">
-                            <label htmlFor={`day-${entry.id}`}>Day:</label>
+                            <label htmlFor={`described-day-${entry.id}`}>Described Day:</label>
                             <input
-                              id={`day-${entry.id}`}
+                              id={`described-day-${entry.id}`}
                               type="date"
-                              value={editEntryDay}
-                              onChange={(e) => setEditEntryDay(e.target.value)}
+                              value={editEntryDescribedDay}
+                              onChange={(e) => setEditEntryDescribedDay(e.target.value)}
                               className="date-input"
                             />
                           </div>
