@@ -52,6 +52,7 @@ export default function Journals() {
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [isRenamingJournal, setIsRenamingJournal] = useState(false);
   const [renameJournalTitle, setRenameJournalTitle] = useState('');
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   const sortEntries = (entries: JournalEntry[], sortBy: SortField): JournalEntry[] => {
     return [...entries].sort((a, b) => {
@@ -585,6 +586,53 @@ export default function Journals() {
     });
   };
 
+  const groupEntriesByMonthYear = (entries: JournalEntry[]): Map<string, JournalEntry[]> => {
+    const grouped = new Map<string, JournalEntry[]>();
+    
+    entries.forEach(entry => {
+      // Use describedDay if available (for daily mode), otherwise use createdAt
+      const date = entry.describedDay 
+        ? new Date(entry.describedDay) 
+        : new Date(entry.createdAt);
+      
+      const monthYear = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!grouped.has(monthYear)) {
+        grouped.set(monthYear, []);
+      }
+      grouped.get(monthYear)!.push(entry);
+    });
+    
+    return grouped;
+  };
+
+  const formatMonthYear = (monthYearKey: string): string => {
+    const [year, month] = monthYearKey.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+    });
+  };
+
+  const formatDescribedDay = (describedDay: string): string => {
+    const date = new Date(describedDay);
+    const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' });
+    return `${describedDay} (${dayOfWeek})`;
+  };
+
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionKey)) {
+        newSet.delete(sectionKey);
+      } else {
+        newSet.add(sectionKey);
+      }
+      return newSet;
+    });
+  };
+
   const handleExport = () => {
     try {
       const exportData: JournalsData = { journals };
@@ -887,87 +935,106 @@ export default function Journals() {
                   <p>Start writing your first entry above!</p>
                 </div>
               ) : (
-                selectedJournal.entries.map((entry) => (
-                  <div key={entry.id} className="entry-card">
-                    <div className="entry-header">
-                      <div className="entry-date-info">
-                        {selectedJournal.dailyMode && entry.describedDay && (
-                          <div className="entry-described-day">📅 {entry.describedDay}</div>
-                        )}
-                        <div className="entry-date">{formatDate(entry.createdAt)}</div>
+                Array.from(groupEntriesByMonthYear(selectedJournal.entries)).map(([monthYear, entries]) => {
+                  const isCollapsed = collapsedSections.has(monthYear);
+                  return (
+                    <div key={monthYear} className="month-section">
+                      <div 
+                        className="month-header" 
+                        onClick={() => toggleSection(monthYear)}
+                      >
+                        <span className="collapse-icon">{isCollapsed ? '▶' : '▼'}</span>
+                        <h3>{formatMonthYear(monthYear)}</h3>
+                        <span className="entry-count-badge">{entries.length} {entries.length === 1 ? 'entry' : 'entries'}</span>
                       </div>
-                      <div className="entry-actions">
-                        {editingEntryId === entry.id ? (
-                          <>
-                            <button
-                              onClick={() => handleSaveEdit(entry.id)}
-                              disabled={saving}
-                              className="btn-save"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              disabled={saving}
-                              className="btn-cancel"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleStartEdit(entry)}
-                              className="btn-edit"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEntry(entry.id)}
-                              className="btn-delete"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                      {!isCollapsed && (
+                        <div className="month-entries">
+                          {entries.map((entry) => (
+                            <div key={entry.id} className="entry-card">
+                              <div className="entry-header">
+                                <div className="entry-date-info">
+                                  {selectedJournal.dailyMode && entry.describedDay && (
+                                    <div className="entry-described-day">📅 {formatDescribedDay(entry.describedDay)}</div>
+                                  )}
+                                  <div className="entry-date">{formatDate(entry.createdAt)}</div>
+                                </div>
+                                <div className="entry-actions">
+                                  {editingEntryId === entry.id ? (
+                                    <>
+                                      <button
+                                        onClick={() => handleSaveEdit(entry.id)}
+                                        disabled={saving}
+                                        className="btn-save"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={handleCancelEdit}
+                                        disabled={saving}
+                                        className="btn-cancel"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => handleStartEdit(entry)}
+                                        className="btn-edit"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteEntry(entry.id)}
+                                        className="btn-delete"
+                                      >
+                                        Delete
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
 
-                    {editingEntryId === entry.id ? (
-                      <>
-                        {selectedJournal.dailyMode && (
-                          <div className="entry-edit-date">
-                            <label htmlFor={`described-day-${entry.id}`}>Described Day:</label>
-                            <input
-                              id={`described-day-${entry.id}`}
-                              type="date"
-                              value={editEntryDescribedDay}
-                              onChange={(e) => setEditEntryDescribedDay(e.target.value)}
-                              className="date-input"
-                            />
-                          </div>
-                        )}
-                        <textarea
-                          className="entry-edit-input"
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          rows={6}
-                        />
-                      </>
-                    ) : (
-                      <div className="entry-content">{entry.content}</div>
-                    )}
+                              {editingEntryId === entry.id ? (
+                                <>
+                                  {selectedJournal.dailyMode && (
+                                    <div className="entry-edit-date">
+                                      <label htmlFor={`described-day-${entry.id}`}>Described Day:</label>
+                                      <input
+                                        id={`described-day-${entry.id}`}
+                                        type="date"
+                                        value={editEntryDescribedDay}
+                                        onChange={(e) => setEditEntryDescribedDay(e.target.value)}
+                                        className="date-input"
+                                      />
+                                    </div>
+                                  )}
+                                  <textarea
+                                    className="entry-edit-input"
+                                    value={editContent}
+                                    onChange={(e) => setEditContent(e.target.value)}
+                                    rows={6}
+                                  />
+                                </>
+                              ) : (
+                                <div className="entry-content">{entry.content}</div>
+                              )}
 
-                    <div className="entry-footer">
-                      <div className="entry-timestamp">
-                        {formatDateTime(entry.createdAt)}
-                        {entry.updatedAt !== entry.createdAt && (
-                          <span className="edited-label"> (edited)</span>
-                        )}
-                      </div>
+                              <div className="entry-footer">
+                                <div className="entry-timestamp">
+                                  {formatDateTime(entry.createdAt)}
+                                  {entry.updatedAt !== entry.createdAt && (
+                                    <span className="edited-label"> (edited)</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </>
