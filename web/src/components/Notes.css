@@ -1,20 +1,20 @@
 .notes-container {
   display: flex;
   height: 100%;
-  background: #f5f5f5;
+  background: #f8f9fa;
 }
 
 .notes-sidebar {
-  width: 300px;
-  background: white;
-  border-right: 1px solid #e0e0e0;
+  width: 280px;
+  background: #ffffff;
+  border-right: 1px solid #dde1e6;
   display: flex;
   flex-direction: column;
 }
 
 .sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 16px;
+  border-bottom: 1px solid #dde1e6;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -22,30 +22,30 @@
 
 .sidebar-header h2 {
   margin: 0;
-  font-size: 1.5rem;
-  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1c1f23;
 }
 
 .btn-new {
-  padding: 8px 16px;
+  padding: 8px 14px;
   border: none;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
+  border-radius: 4px;
+  background: #6d4aff;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s;
 }
 
 .btn-new:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  background: #5836e8;
 }
 
 .sidebar-actions {
-  padding: 12px 20px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #dde1e6;
   display: flex;
   gap: 8px;
 }
@@ -54,21 +54,20 @@
 .btn-import {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  background: white;
-  color: #555;
-  font-size: 0.85rem;
-  font-weight: 500;
+  border: 1px solid #c1c7cd;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #464c52;
+  font-size: 0.8125rem;
+  font-weight: 400;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .btn-export:hover,
 .btn-import:hover {
-  border-color: #667eea;
-  color: #667eea;
-  background: #f0f4ff;
+  border-color: #6d4aff;
+  background: #f5f3ff;
 }
 
 .notes-list {
@@ -77,163 +76,162 @@
 }
 
 .note-item {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f1f3;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s;
 }
 
 .note-item:hover {
-  background: #f8f9fa;
+  background: #f5f6f8;
 }
 
 .note-item.active {
-  background: #f0f4ff;
-  border-left: 3px solid #667eea;
+  background: #f5f3ff;
+  border-left: 3px solid #6d4aff;
 }
 
 .note-title {
-  font-weight: 600;
-  color: #333;
+  font-weight: 500;
+  color: #1c1f23;
   margin-bottom: 4px;
-  font-size: 1rem;
+  font-size: 0.9375rem;
 }
 
 .note-preview {
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.8125rem;
+  color: #70757a;
   margin-bottom: 4px;
   line-height: 1.4;
 }
 
 .note-date {
   font-size: 0.75rem;
-  color: #999;
+  color: #9ca3af;
 }
 
 .notes-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: #ffffff;
 }
 
 .editor-header {
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #dde1e6;
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .btn-primary {
-  padding: 10px 20px;
+  padding: 9px 18px;
   border: none;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
+  border-radius: 4px;
+  background: #6d4aff;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  background: #5836e8;
 }
 
 .btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  padding: 10px 20px;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
-  color: #666;
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 9px 18px;
+  border: 1px solid #c1c7cd;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #464c52;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.15s, color 0.15s;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #6d4aff;
+  color: #6d4aff;
 }
 
 .btn-danger {
-  padding: 10px 20px;
+  padding: 9px 18px;
   border: none;
-  border-radius: 6px;
-  background: #dc3545;
-  color: white;
-  font-size: 0.95rem;
-  font-weight: 600;
+  border-radius: 4px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.15s;
 }
 
 .btn-danger:hover {
-  background: #c82333;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+  background: #b91c1c;
 }
 
 .editor {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 24px;
 }
 
 .title-input {
   border: none;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #333;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1c1f23;
   margin-bottom: 20px;
   padding: 0;
   outline: none;
+  background: transparent;
 }
 
 .title-input::placeholder {
-  color: #ccc;
+  color: #c1c7cd;
 }
 
 .content-input {
   flex: 1;
   border: none;
-  font-size: 1rem;
-  color: #333;
+  font-size: 0.9375rem;
+  color: #1c1f23;
   line-height: 1.6;
   resize: none;
   outline: none;
   font-family: inherit;
+  background: transparent;
 }
 
 .content-input::placeholder {
-  color: #ccc;
+  color: #c1c7cd;
 }
 
 .viewer {
   flex: 1;
-  padding: 20px;
+  padding: 24px;
   overflow-y: auto;
 }
 
 .view-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #333;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1c1f23;
   margin: 0 0 20px 0;
 }
 
 .view-content {
-  font-size: 1rem;
-  color: #333;
+  font-size: 0.9375rem;
+  color: #1c1f23;
   line-height: 1.6;
   white-space: pre-wrap;
 }
@@ -241,8 +239,8 @@
 .empty-state {
   padding: 40px 20px;
   text-align: center;
-  color: #999;
-  font-size: 0.95rem;
+  color: #70757a;
+  font-size: 0.9375rem;
 }
 
 .empty-state-center {
@@ -255,24 +253,26 @@
 }
 
 .empty-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+  opacity: 0.5;
 }
 
 .empty-state-center h3 {
-  margin: 0 0 20px 0;
-  color: #666;
+  margin: 0 0 16px 0;
+  color: #464c52;
   font-weight: 500;
+  font-size: 1.125rem;
 }
 
 .error-message {
   margin: 0 20px 20px 20px;
-  padding: 12px 16px;
-  background: #fee;
-  border: 1px solid #fcc;
-  border-radius: 8px;
-  color: #c33;
-  font-size: 0.9rem;
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  color: #dc2626;
+  font-size: 0.875rem;
 }
 
 .loading {
@@ -280,28 +280,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
-  color: #666;
+  font-size: 1rem;
+  color: #70757a;
 }
 
 /* Scrollbar styling */
 .notes-list::-webkit-scrollbar,
 .viewer::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .notes-list::-webkit-scrollbar-track,
 .viewer::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f8f9fa;
 }
 
 .notes-list::-webkit-scrollbar-thumb,
 .viewer::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border-radius: 4px;
+  background: #c1c7cd;
+  border-radius: 3px;
 }
 
 .notes-list::-webkit-scrollbar-thumb:hover,
 .viewer::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: #9ca3af;
 }

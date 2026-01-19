@@ -24,84 +24,81 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  background: white;
-  border-bottom: 2px solid #e0e0e0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 12px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #dde1e6;
 }
 
 .nav-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-weight: 700;
-  font-size: 1.5rem;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: #1c1f23;
 }
 
 .nav-logo {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 
 .nav-title {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #6d4aff;
 }
 
 .nav-links {
   display: flex;
-  gap: 8px;
+  gap: 4px;
 }
 
 .nav-link {
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
   text-decoration: none;
-  color: #666;
-  font-weight: 600;
-  font-size: 1rem;
-  transition: all 0.2s;
+  color: #464c52;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  transition: background 0.15s, color 0.15s;
 }
 
 .nav-link:hover {
-  background: #f8f9fa;
-  color: #333;
+  background: #f5f6f8;
+  color: #1c1f23;
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: #6d4aff;
+  color: #ffffff;
 }
 
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .username {
-  color: #666;
-  font-weight: 500;
-  font-size: 0.95rem;
+  color: #464c52;
+  font-weight: 400;
+  font-size: 0.875rem;
 }
 
 .btn-logout {
-  padding: 8px 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
-  color: #666;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 7px 14px;
+  border: 1px solid #c1c7cd;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #464c52;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
 .btn-logout:hover {
-  border-color: #dc3545;
-  color: #dc3545;
-  background: #fff5f5;
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #fef2f2;
 }
 
 /* Main Content */
