@@ -21,6 +21,7 @@ interface Journal {
   createdAt: number;
   updatedAt: number;
   dailyMode?: boolean; // Whether this journal is in daily mode (each entry describes a day)
+  groupByMonths?: boolean; // Whether to group entries by month/year in the view
 }
 
 interface ValidationIssue {
@@ -88,7 +89,7 @@ export default function Journals() {
   const cleanJournal = (journal: Journal): Journal => {
     try {
       console.log('[cleanJournal] Starting to clean journal:', journal.id);
-      const allowedJournalFields = ['id', 'title', 'entries', 'createdAt', 'updatedAt', 'dailyMode'];
+      const allowedJournalFields = ['id', 'title', 'entries', 'createdAt', 'updatedAt', 'dailyMode', 'groupByMonths'];
       const allowedEntryFields = ['id', 'content', 'createdAt', 'updatedAt', 'describedDay'];
       
       // Clean journal fields
@@ -299,6 +300,35 @@ export default function Journals() {
       } else {
         setNewEntryDescribedDay('');
       }
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to update journal settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleGroupByMonths = async () => {
+    if (!selectedJournal) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedJournal = {
+        ...selectedJournal,
+        groupByMonths: !selectedJournal.groupByMonths,
+        updatedAt: now,
+      };
+
+      const updatedJournals = journals.map((j) =>
+        j.id === selectedJournal.id ? updatedJournal : j
+      );
+
+      await saveJournals(updatedJournals);
+      setJournals(updatedJournals);
+      setSelectedJournal(updatedJournal);
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to update journal settings');
@@ -888,14 +918,23 @@ export default function Journals() {
                         onChange={handleToggleDailyMode}
                         disabled={saving}
                       />
-                      <span>Daily Mode</span>
+                      <span>One record per day</span>
                       <button
                         className="help-button"
-                        title="In Daily Mode, each entry describes a specific day (identified by a date). The describedDay field becomes required and entries are sorted by day."
+                        title="When enabled, each entry describes a specific day (identified by a date). The describedDay field becomes required and entries are sorted by day."
                         onClick={(e) => e.preventDefault()}
                       >
                         ?
                       </button>
+                    </label>
+                    <label className="daily-mode-toggle">
+                      <input
+                        type="checkbox"
+                        checked={selectedJournal.groupByMonths || false}
+                        onChange={handleToggleGroupByMonths}
+                        disabled={saving}
+                      />
+                      <span>Group by months</span>
                     </label>
                     <button onClick={handleStartRenameJournal} className="btn-rename-journal">
                       ✏️ Rename
@@ -979,7 +1018,8 @@ export default function Journals() {
                   <h3>No entries yet</h3>
                   <p>Start writing your first entry above!</p>
                 </div>
-              ) : (
+              ) : selectedJournal.groupByMonths ? (
+                // Grouped view by month/year
                 Array.from(groupEntriesByMonthYear(selectedJournal.entries)).map(([monthYear, entries]) => {
                   const isCollapsed = collapsedSections.has(monthYear);
                   return (
@@ -1080,6 +1120,89 @@ export default function Journals() {
                     </div>
                   );
                 })
+              ) : (
+                // Flat list view (no grouping)
+                selectedJournal.entries.map((entry) => (
+                  <div key={entry.id} className="entry-card">
+                    <div className="entry-header">
+                      <div className="entry-date-info">
+                        {selectedJournal.dailyMode && entry.describedDay && (
+                          <div className="entry-described-day">📅 {formatDescribedDay(entry.describedDay)}</div>
+                        )}
+                        <div className="entry-date">{formatDate(entry.createdAt)}</div>
+                      </div>
+                      <div className="entry-actions">
+                        {editingEntryId === entry.id ? (
+                          <>
+                            <button
+                              onClick={() => handleSaveEdit(entry.id)}
+                              disabled={saving}
+                              className="btn-save"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              disabled={saving}
+                              className="btn-cancel"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleStartEdit(entry)}
+                              className="btn-edit"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEntry(entry.id)}
+                              className="btn-delete"
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {editingEntryId === entry.id ? (
+                      <>
+                        {selectedJournal.dailyMode && (
+                          <div className="entry-edit-date">
+                            <label htmlFor={`described-day-${entry.id}`}>Described Day:</label>
+                            <input
+                              id={`described-day-${entry.id}`}
+                              type="date"
+                              value={editEntryDescribedDay}
+                              onChange={(e) => setEditEntryDescribedDay(e.target.value)}
+                              className="date-input"
+                            />
+                          </div>
+                        )}
+                        <textarea
+                          className="entry-edit-input"
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          rows={6}
+                        />
+                      </>
+                    ) : (
+                      <div className="entry-content">{entry.content}</div>
+                    )}
+
+                    <div className="entry-footer">
+                      <div className="entry-timestamp">
+                        {formatDateTime(entry.createdAt)}
+                        {entry.updatedAt !== entry.createdAt && (
+                          <span className="edited-label"> (edited)</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
           </>
