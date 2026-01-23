@@ -67,6 +67,9 @@ func (s *Server) NewRouter() *chi.Mux {
 		r.Group(func(r chi.Router) {
 			r.Use(s.jwtConfig.AuthMiddleware)
 
+			// Auth verification endpoint
+			r.Get("/auth/verify", s.VerifyAuth)
+
 			// User routes
 			r.Patch("/users/me", s.UpdateUser)
 
