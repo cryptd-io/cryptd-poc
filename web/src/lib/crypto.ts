@@ -41,7 +41,16 @@ function encodeUTF8(str: string): Uint8Array {
 }
 
 function base64Encode(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
+  // Handle large byte arrays by chunking to avoid stack overflow
+  const CHUNK_SIZE = 8192; // Process in chunks to avoid call stack size exceeded
+  let binary = '';
+  
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode(...chunk);
+  }
+  
+  return btoa(binary);
 }
 
 function base64Decode(str: string): Uint8Array {
@@ -245,12 +254,34 @@ export async function encryptBlob(
   accountKey: Uint8Array,
   blobName: string
 ): Promise<Container> {
-  const plaintext = typeof blobData === 'string' 
-    ? encodeUTF8(blobData)
-    : encodeUTF8(JSON.stringify(blobData));
-  
-  const aad = `cryptd:blob:v1:blob:${blobName}`;
-  return encryptAES256GCM(accountKey, plaintext, aad);
+  try {
+    console.log('[encryptBlob] Starting encryption for blob:', blobName);
+    console.log('[encryptBlob] Data type:', typeof blobData);
+    
+    const plaintext = typeof blobData === 'string' 
+      ? encodeUTF8(blobData)
+      : (() => {
+          console.log('[encryptBlob] Stringifying object...');
+          try {
+            const json = JSON.stringify(blobData);
+            console.log('[encryptBlob] Stringify successful, JSON length:', json.length);
+            return encodeUTF8(json);
+          } catch (stringifyErr) {
+            console.error('[encryptBlob] JSON.stringify failed:', stringifyErr);
+            throw stringifyErr;
+          }
+        })();
+    
+    console.log('[encryptBlob] Plaintext length:', plaintext.length);
+    const aad = `cryptd:blob:v1:blob:${blobName}`;
+    console.log('[encryptBlob] Calling encryptAES256GCM...');
+    const result = await encryptAES256GCM(accountKey, plaintext, aad);
+    console.log('[encryptBlob] Encryption successful');
+    return result;
+  } catch (err) {
+    console.error('[encryptBlob] Error during encryption:', err);
+    throw err;
+  }
 }
 
 /**
