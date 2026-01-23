@@ -102,6 +102,88 @@ func TestGetKDFParamsMissingUsername(t *testing.T) {
 	}
 }
 
+func TestVerifyAuth(t *testing.T) {
+	server, database := setupTestServer(t)
+	defer func() { _ = database.Close() }()
+
+	// Create a test user
+	user := &models.User{
+		Username:          "testuser",
+		KDFType:           models.KDFTypePBKDF2SHA256,
+		KDFIterations:     100000,
+		LoginVerifierHash: []byte("test-hash"),
+		WrappedAccountKey: models.Container{
+			Nonce:      "nonce",
+			Ciphertext: "ciphertext",
+			Tag:        "tag",
+		},
+	}
+
+	err := database.CreateUser(user)
+	if err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+
+	// Generate a valid token
+	token, err := server.jwtConfig.GenerateToken(user.ID)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	// Test with valid token
+	router := server.NewRouter()
+	req := httptest.NewRequest("GET", "/v1/auth/verify", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+
+	var response VerifyAuthResponse
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if !response.Valid {
+		t.Error("expected valid to be true")
+	}
+
+	if response.UserID != user.ID {
+		t.Errorf("expected user ID %d, got %d", user.ID, response.UserID)
+	}
+}
+
+func TestVerifyAuthUnauthorized(t *testing.T) {
+	server, database := setupTestServer(t)
+	defer func() { _ = database.Close() }()
+
+	router := server.NewRouter()
+
+	// Test without token
+	req := httptest.NewRequest("GET", "/v1/auth/verify", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status 401, got %d", w.Code)
+	}
+
+	// Test with invalid token
+	req = httptest.NewRequest("GET", "/v1/auth/verify", nil)
+	req.Header.Set("Authorization", "Bearer invalid-token")
+	w = httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status 401, got %d", w.Code)
+	}
+}
+
 func TestRegister(t *testing.T) {
 	server, database := setupTestServer(t)
 	defer func() { _ = database.Close() }()

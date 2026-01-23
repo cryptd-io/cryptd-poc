@@ -1,21 +1,43 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import Auth from './components/Auth';
 import Notes from './components/Notes';
 import Journals from './components/Journals';
 import { isAuthenticated, clearAuthState, getUsername } from './lib/auth';
+import { onSessionExpired } from './lib/api';
+import { startSessionMonitoring, stopSessionMonitoring } from './lib/sessionManager';
 import './App.css';
 
 function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const username = getUsername();
 
   const handleLogout = () => {
     if (confirm('Are you sure you want to logout? Your session will be cleared.')) {
+      stopSessionMonitoring();
       clearAuthState();
       window.location.href = '/';
     }
   };
+
+  // Handle session expiration - redirect to login
+  useEffect(() => {
+    const handleExpired = () => {
+      alert('Your session has expired. Please login again.');
+      navigate('/', { replace: true });
+    };
+
+    // Register callback for API-detected session expiration
+    onSessionExpired(handleExpired);
+
+    // Start monitoring session
+    startSessionMonitoring(handleExpired);
+
+    return () => {
+      stopSessionMonitoring();
+    };
+  }, [navigate]);
 
   return (
     <div className="app-layout">

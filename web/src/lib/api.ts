@@ -84,6 +84,26 @@ export class APIError extends Error {
   }
 }
 
+// === Session Expiration Handler ===
+
+let sessionExpiredCallback: (() => void) | null = null;
+
+/**
+ * Register a callback to be invoked when session expires
+ */
+export function onSessionExpired(callback: () => void): void {
+  sessionExpiredCallback = callback;
+}
+
+/**
+ * Trigger session expired callback
+ */
+function handleSessionExpired(): void {
+  if (sessionExpiredCallback) {
+    sessionExpiredCallback();
+  }
+}
+
 // === Helper Functions ===
 
 async function fetchJSON<T = Record<string, unknown>>(
@@ -100,6 +120,12 @@ async function fetchJSON<T = Record<string, unknown>>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    
+    // Check for session expired (401 Unauthorized)
+    if (response.status === 401) {
+      handleSessionExpired();
+    }
+    
     throw new APIError(
       errorData.error || `HTTP ${response.status}`,
       response.status,
@@ -209,4 +235,22 @@ export async function deleteBlob(
     method: 'DELETE',
     headers: withAuth(token),
   });
+}
+
+/**
+ * Verify current auth session is valid
+ */
+export async function verifyAuthSession(token: string): Promise<boolean> {
+  try {
+    await fetchJSON<{ userId: number; valid: boolean }>('/v1/auth/verify', {
+      headers: withAuth(token),
+    });
+    return true;
+  } catch (error) {
+    if (error instanceof APIError && error.status === 401) {
+      return false;
+    }
+    // For other errors, assume session is still valid (network issues, etc)
+    return true;
+  }
 }

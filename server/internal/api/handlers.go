@@ -366,6 +366,26 @@ func (s *Server) DeleteBlob(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// VerifyAuthResponse represents the auth verification response
+type VerifyAuthResponse struct {
+	UserID int64 `json:"userId"`
+	Valid  bool  `json:"valid"`
+}
+
+// VerifyAuth handles GET /v1/auth/verify - verifies current session is valid
+func (s *Server) VerifyAuth(w http.ResponseWriter, r *http.Request) {
+	userID, err := middleware.GetUserIDFromContext(r.Context())
+	if err != nil {
+		respondError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, VerifyAuthResponse{
+		UserID: userID,
+		Valid:  true,
+	})
+}
+
 // Helper functions
 
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {
