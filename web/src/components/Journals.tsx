@@ -918,7 +918,7 @@ export default function Journals() {
                         onChange={handleToggleDailyMode}
                         disabled={saving}
                       />
-                      <span>One record per day</span>
+                      <span>One entry per day</span>
                       <button
                         className="help-button"
                         title="When enabled, each entry describes a specific day (identified by a date). The describedDay field becomes required and entries are sorted by day."
