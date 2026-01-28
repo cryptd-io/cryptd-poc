@@ -178,6 +178,37 @@ export default function Lists() {
     }
   };
 
+  const handleToggleArchiveList = async (list: List, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedList = {
+        ...list,
+        archived: !list.archived,
+        updatedAt: now,
+      };
+
+      const updatedLists = lists.map((l) =>
+        l.id === list.id ? updatedList : l
+      ).sort((a, b) => b.updatedAt - a.updatedAt);
+
+      await saveLists(updatedLists);
+      setLists(updatedLists);
+      if (selectedList?.id === list.id) {
+        setSelectedList(updatedList);
+      }
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to archive list');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Item operations
   const handleToggleCheckItem = async (item: ListItem) => {
     if (!selectedList) return;
@@ -299,6 +330,41 @@ export default function Lists() {
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to delete item');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleArchiveItem = async (item: ListItem) => {
+    if (!selectedList) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedItems = selectedList.items.map((i) =>
+        i.id === item.id
+          ? { ...i, archived: !i.archived, updatedAt: now }
+          : i
+      );
+
+      const updatedList = {
+        ...selectedList,
+        items: updatedItems,
+        updatedAt: now,
+      };
+
+      const updatedLists = lists.map((l) =>
+        l.id === selectedList.id ? updatedList : l
+      ).sort((a, b) => b.updatedAt - a.updatedAt);
+
+      await saveLists(updatedLists);
+      setLists(updatedLists);
+      setSelectedList(updatedList);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to archive item');
     } finally {
       setSaving(false);
     }
@@ -473,16 +539,16 @@ export default function Lists() {
         <div className="sidebar-header">
           <h2>Lists</h2>
           <button onClick={handleCreateList} className="btn-new">
-            +
+            + New List
           </button>
         </div>
         
         <div className="sidebar-actions">
-          <button onClick={handleExport} className="btn-action" title="Export lists">
-            Export
+          <button onClick={handleExport} className="btn-export" title="Export lists">
+            📥 Export
           </button>
-          <button onClick={handleImport} className="btn-action" title="Import lists">
-            Import
+          <button onClick={handleImport} className="btn-import" title="Import lists">
+            📤 Import
           </button>
         </div>
 
@@ -534,12 +600,20 @@ export default function Lists() {
                 >
                   <div className="list-item-main">
                     <div className="list-title">
+                      {list.archived && <span className="archived-badge">📦</span>}
                       {list.title}
                     </div>
                     <div className="list-count">
                       {counts.unchecked > 0 ? counts.unchecked : counts.total}
                     </div>
                   </div>
+                  <button
+                    className="btn-archive-list"
+                    onClick={(e) => handleToggleArchiveList(list, e)}
+                    title={list.archived ? 'Unarchive list' : 'Archive list'}
+                  >
+                    {list.archived ? '📂' : '📦'}
+                  </button>
                   <button
                     className="btn-delete-list"
                     onClick={(e) => {
@@ -640,6 +714,7 @@ export default function Lists() {
                         onClick={() => handleStartEditItem(item)}
                       >
                         <div className="item-title">
+                          {item.archived && <span className="archived-icon">📦</span>}
                           {item.title}
                         </div>
                         {item.note && (
@@ -648,6 +723,13 @@ export default function Lists() {
                           </div>
                         )}
                       </div>
+                      <button
+                        className="btn-archive-item"
+                        onClick={() => handleToggleArchiveItem(item)}
+                        title={item.archived ? 'Unarchive item' : 'Archive item'}
+                      >
+                        {item.archived ? '📂' : '📦'}
+                      </button>
                       <button
                         className="btn-delete-item"
                         onClick={() => handleDeleteItem(item)}

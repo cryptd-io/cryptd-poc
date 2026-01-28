@@ -400,6 +400,41 @@ export default function Boards() {
     }
   };
 
+  const handleToggleArchiveColumn = async (columnId: string) => {
+    if (!selectedBoard) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedColumns = selectedBoard.columns.map((col) =>
+        col.id === columnId
+          ? { ...col, archived: !col.archived, updatedAt: now }
+          : col
+      );
+
+      const updatedBoard = {
+        ...selectedBoard,
+        columns: updatedColumns,
+        updatedAt: now,
+      };
+
+      const updatedBoards = boards.map((b) =>
+        b.id === selectedBoard.id ? updatedBoard : b
+      ).sort((a, b) => b.updatedAt - a.updatedAt);
+
+      await saveBoards(updatedBoards);
+      setBoards(updatedBoards);
+      setSelectedBoard(updatedBoard);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to archive column');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Card operations
   const handleAddCard = async (columnId: string) => {
     if (!selectedBoard) return;
@@ -550,6 +585,49 @@ export default function Boards() {
     } catch (err) {
       const error = err as Error;
       setError(error.message || 'Failed to delete card');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleArchiveCard = async (columnId: string, cardId: string) => {
+    if (!selectedBoard) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedColumns = selectedBoard.columns.map((col) =>
+        col.id === columnId
+          ? {
+              ...col,
+              cards: col.cards.map((card) =>
+                card.id === cardId
+                  ? { ...card, archived: !card.archived, updatedAt: now }
+                  : card
+              ),
+              updatedAt: now,
+            }
+          : col
+      );
+
+      const updatedBoard = {
+        ...selectedBoard,
+        columns: updatedColumns,
+        updatedAt: now,
+      };
+
+      const updatedBoards = boards.map((b) =>
+        b.id === selectedBoard.id ? updatedBoard : b
+      ).sort((a, b) => b.updatedAt - a.updatedAt);
+
+      await saveBoards(updatedBoards);
+      setBoards(updatedBoards);
+      setSelectedBoard(updatedBoard);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to archive card');
     } finally {
       setSaving(false);
     }
@@ -711,10 +789,15 @@ export default function Boards() {
 
   const getVisibleColumns = () => {
     if (!selectedBoard) return [];
-    if (showArchived) {
-      return selectedBoard.columns;
-    }
-    return selectedBoard.columns.filter(c => !c.archived);
+    let columns = showArchived ? selectedBoard.columns : selectedBoard.columns.filter(c => !c.archived);
+    
+    // Filter cards within each column based on showArchived
+    columns = columns.map(col => ({
+      ...col,
+      cards: showArchived ? col.cards : col.cards.filter(card => !card.archived)
+    }));
+    
+    return columns;
   };
 
   const getBoardStats = (board: Board) => {
@@ -936,6 +1019,7 @@ export default function Boards() {
                       ) : (
                         <>
                           <h3 className="column-title">
+                            {column.archived && <span className="archived-badge">📦</span>}
                             {column.title}
                             <span className="card-count">{column.cards.length}</span>
                           </h3>
@@ -946,6 +1030,13 @@ export default function Boards() {
                               title="Edit column"
                             >
                               ✏️
+                            </button>
+                            <button
+                              onClick={() => handleToggleArchiveColumn(column.id)}
+                              className="btn-column-action"
+                              title={column.archived ? 'Unarchive column' : 'Archive column'}
+                            >
+                              {column.archived ? '📂' : '📦'}
                             </button>
                             <button
                               onClick={() => handleDeleteColumn(column.id)}
@@ -963,7 +1054,7 @@ export default function Boards() {
                       {column.cards.map((card) => (
                         <div
                           key={card.id}
-                          className={`board-card ${expandedCardId === card.id ? 'expanded' : ''} ${editingCardId === card.id ? 'editing' : ''}`}
+                          className={`board-card ${expandedCardId === card.id ? 'expanded' : ''} ${editingCardId === card.id ? 'editing' : ''} ${card.archived ? 'archived' : ''}`}
                           draggable={editingCardId !== card.id}
                           onDragStart={() => handleDragStart(card, column.id)}
                           onDragEnd={handleDragEnd}
@@ -1007,7 +1098,10 @@ export default function Boards() {
                                 className="card-content"
                                 onClick={() => handleToggleExpandCard(card.id)}
                               >
-                                <div className="card-title">{card.title}</div>
+                                <div className="card-title">
+                                  {card.archived && <span className="archived-badge">📦</span>}
+                                  {card.title}
+                                </div>
                                 {card.content && (
                                   <div className={`card-description ${expandedCardId === card.id ? 'expanded' : ''}`}>
                                     {card.content}
@@ -1021,6 +1115,13 @@ export default function Boards() {
                                   title="Edit card"
                                 >
                                   ✏️
+                                </button>
+                                <button
+                                  onClick={() => handleToggleArchiveCard(column.id, card.id)}
+                                  className="btn-card-action"
+                                  title={card.archived ? 'Unarchive card' : 'Archive card'}
+                                >
+                                  {card.archived ? '📂' : '📦'}
                                 </button>
                                 <button
                                   onClick={() => handleDeleteCard(column.id, card.id)}

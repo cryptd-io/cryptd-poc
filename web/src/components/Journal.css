@@ -71,6 +71,28 @@
   background: var(--color-primary-light);
 }
 
+.view-filters {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+}
+
 /* === NEW JOURNAL FORM === */
 .new-journal-form {
   padding: var(--spacing-md) var(--spacing-lg);
@@ -163,11 +185,23 @@
   border-left: 3px solid var(--color-primary);
 }
 
+.journal-item.archived {
+  opacity: 0.6;
+}
+
 .journal-title {
   font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: 6px;
   font-size: var(--font-size-base);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.archived-badge {
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 .journal-info {
@@ -367,6 +401,22 @@
 
 .btn-delete-journal:hover {
   background: var(--color-danger-hover);
+}
+
+.btn-archive-journal {
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-warning);
+  color: var(--color-bg-white);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btn-archive-journal:hover {
+  background: #d97706;
 }
 
 /* === JOURNAL SETTINGS === */
@@ -667,6 +717,7 @@
 
 .btn-edit,
 .btn-delete,
+.btn-archive,
 .btn-save,
 .btn-cancel {
   padding: 6px var(--spacing-md);
@@ -685,6 +736,15 @@
 
 .btn-edit:hover {
   background: #ede9fe;
+}
+
+.btn-archive {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.btn-archive:hover {
+  background: #fde68a;
 }
 
 .btn-delete {

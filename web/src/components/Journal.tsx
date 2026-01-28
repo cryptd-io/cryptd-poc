@@ -58,6 +58,7 @@ export default function Journal() {
   const [isRenamingJournal, setIsRenamingJournal] = useState(false);
   const [renameJournalTitle, setRenameJournalTitle] = useState('');
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [showArchived, setShowArchived] = useState(false);
 
   const sortEntries = (entries: JournalEntry[], sortBy: SortField): JournalEntry[] => {
     try {
@@ -475,6 +476,35 @@ export default function Journal() {
     }
   };
 
+  const handleToggleArchiveJournal = async () => {
+    if (!selectedJournal) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedJournal = {
+        ...selectedJournal,
+        archived: !selectedJournal.archived,
+        updatedAt: now,
+      };
+
+      const updatedJournals = journals.map((j) =>
+        j.id === selectedJournal.id ? updatedJournal : j
+      ).sort((a, b) => b.updatedAt - a.updatedAt);
+
+      await saveJournals(updatedJournals);
+      setJournals(updatedJournals);
+      setSelectedJournal(updatedJournal);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to archive journal');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleAddEntry = async () => {
     if (!selectedJournal) return;
     if (!newEntry.trim()) {
@@ -635,6 +665,41 @@ export default function Journal() {
     }
   };
 
+  const handleToggleArchiveEntry = async (entryId: string) => {
+    if (!selectedJournal) return;
+
+    setSaving(true);
+    setError('');
+
+    try {
+      const now = Date.now();
+      const updatedEntries = selectedJournal.entries.map((entry) =>
+        entry.id === entryId
+          ? { ...entry, archived: !entry.archived, updatedAt: now }
+          : entry
+      );
+
+      const updatedJournal = {
+        ...selectedJournal,
+        entries: sortEntries(updatedEntries, getSortField(selectedJournal)),
+        updatedAt: now,
+      };
+
+      const updatedJournals = journals.map((j) =>
+        j.id === selectedJournal.id ? updatedJournal : j
+      ).sort((a, b) => b.updatedAt - a.updatedAt);
+
+      await saveJournals(updatedJournals);
+      setJournals(updatedJournals);
+      setSelectedJournal(updatedJournal);
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || 'Failed to archive entry');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -732,6 +797,22 @@ export default function Journal() {
     }
   };
 
+  // Helper functions
+  const getVisibleJournals = () => {
+    if (showArchived) {
+      return journals;
+    }
+    return journals.filter(j => !j.archived);
+  };
+
+  const getVisibleEntries = () => {
+    if (!selectedJournal) return [];
+    if (showArchived) {
+      return selectedJournal.entries;
+    }
+    return selectedJournal.entries.filter(e => !e.archived);
+  };
+
   const handleImport = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -813,7 +894,7 @@ export default function Journal() {
         <div className="sidebar-header">
           <h2>Journal</h2>
           <button onClick={handleCreateJournal} className="btn-new">
-            + New
+            + New Journal
           </button>
         </div>
         
@@ -824,6 +905,17 @@ export default function Journal() {
           <button onClick={handleImport} className="btn-import" title="Import journal">
             📤 Import
           </button>
+        </div>
+
+        <div className="view-filters">
+          <label className="filter-checkbox">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+            />
+            <span>Show archived</span>
+          </label>
         </div>
 
         {isCreatingJournal && (
@@ -856,16 +948,21 @@ export default function Journal() {
         )}
         
         <div className="journal-list">
-          {journals.length === 0 ? (
-            <div className="empty-state">No journals yet. Create one!</div>
+          {getVisibleJournals().length === 0 ? (
+            <div className="empty-state">
+              {showArchived ? 'No journals yet.' : 'No active journals. Create one!'}
+            </div>
           ) : (
-            journals.map((journal) => (
+            getVisibleJournals().map((journal) => (
               <div
                 key={journal.id}
-                className={`journal-item ${selectedJournal?.id === journal.id ? 'active' : ''}`}
+                className={`journal-item ${selectedJournal?.id === journal.id ? 'active' : ''} ${journal.archived ? 'archived' : ''}`}
                 onClick={() => handleSelectJournal(journal)}
               >
-                <div className="journal-title">{journal.title}</div>
+                <div className="journal-title">
+                  {journal.archived && <span className="archived-badge">📦</span>}
+                  {journal.title}
+                </div>
                 <div className="journal-info">
                   <span className="journal-count">
                     {journal.entries.length} {journal.entries.length === 1 ? 'entry' : 'entries'}
@@ -943,6 +1040,13 @@ export default function Journal() {
                     <button onClick={handleStartRenameJournal} className="btn-rename-journal">
                       ✏️ Rename
                     </button>
+                    <button 
+                      onClick={handleToggleArchiveJournal} 
+                      className="btn-archive-journal"
+                      title={selectedJournal.archived ? 'Unarchive journal' : 'Archive journal'}
+                    >
+                      {selectedJournal.archived ? '📂 Unarchive' : '📦 Archive'}
+                    </button>
                     <button onClick={validateJournal} className="btn-validate" title="Validate journal entries">
                       ✓ Validate
                     </button>
@@ -1016,7 +1120,7 @@ export default function Journal() {
 
             {/* Entries Feed */}
             <div className="entries-feed">
-              {selectedJournal.entries.length === 0 ? (
+              {getVisibleEntries().length === 0 ? (
                 <div className="empty-state-entries">
                   <div className="empty-icon">✍️</div>
                   <h3>No entries yet</h3>
@@ -1024,7 +1128,7 @@ export default function Journal() {
                 </div>
               ) : selectedJournal.groupByMonths ? (
                 // Grouped view by month/year
-                Array.from(groupEntriesByMonthYear(selectedJournal.entries)).map(([monthYear, entries]) => {
+                Array.from(groupEntriesByMonthYear(getVisibleEntries())).map(([monthYear, entries]) => {
                   const isCollapsed = collapsedSections.has(monthYear);
                   return (
                     <div key={monthYear} className="month-section">
@@ -1072,6 +1176,13 @@ export default function Journal() {
                                         className="btn-edit"
                                       >
                                         Edit
+                                      </button>
+                                      <button
+                                        onClick={() => handleToggleArchiveEntry(entry.id)}
+                                        className="btn-archive"
+                                        title={entry.archived ? 'Unarchive entry' : 'Archive entry'}
+                                      >
+                                        {entry.archived ? '📂' : '📦'}
                                       </button>
                                       <button
                                         onClick={() => handleDeleteEntry(entry.id)}
@@ -1126,7 +1237,7 @@ export default function Journal() {
                 })
               ) : (
                 // Flat list view (no grouping)
-                selectedJournal.entries.map((entry) => (
+                getVisibleEntries().map((entry) => (
                   <div key={entry.id} className="entry-card">
                     <div className="entry-header">
                       <div className="entry-date-info">
@@ -1160,6 +1271,13 @@ export default function Journal() {
                               className="btn-edit"
                             >
                               Edit
+                            </button>
+                            <button
+                              onClick={() => handleToggleArchiveEntry(entry.id)}
+                              className="btn-archive"
+                              title={entry.archived ? 'Unarchive entry' : 'Archive entry'}
+                            >
+                              {entry.archived ? '📂' : '📦'}
                             </button>
                             <button
                               onClick={() => handleDeleteEntry(entry.id)}

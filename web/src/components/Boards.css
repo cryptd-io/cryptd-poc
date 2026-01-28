@@ -356,6 +356,10 @@
   border: 2px solid var(--color-primary);
 }
 
+.board-column.archived {
+  opacity: 0.6;
+}
+
 .column-header {
   padding: var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
@@ -374,6 +378,11 @@
   align-items: center;
   gap: var(--spacing-sm);
   flex: 1;
+}
+
+.archived-badge {
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 .card-count {
@@ -478,6 +487,10 @@
   box-shadow: var(--shadow-md);
 }
 
+.board-card.archived {
+  opacity: 0.6;
+}
+
 .card-content {
   display: flex;
   flex-direction: column;
@@ -492,6 +505,9 @@
   color: var(--color-text-primary);
   line-height: 1.4;
   word-wrap: break-word;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .card-description {
