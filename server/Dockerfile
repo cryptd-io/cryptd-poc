@@ -5,13 +5,16 @@ WORKDIR /app
 
 # Copy go mod files
 COPY go.mod go.sum ./
-RUN go mod download
+
+# Download dependencies with progress output
+ENV GOPROXY=https://proxy.golang.org,direct
+RUN go mod download -x
 
 # Copy source code
 COPY . .
 
 # Build the application (CGO disabled for pure Go build)
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" -o /app/cryptd-server ./cmd/server
+RUN CGO_ENABLED=0 GOOS=linux go build -v -a -ldflags="-s -w" -o /app/cryptd-server ./cmd/server
 
 # Runtime stage
 FROM alpine:latest
