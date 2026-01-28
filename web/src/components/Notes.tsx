@@ -537,7 +537,7 @@ export default function Notes() {
   const getVisibleNotes = () => {
     if (!selectedFolder) return [];
     
-    let notes = showArchived ? selectedFolder.notes : selectedFolder.notes.filter(n => !n.archived);
+    const notes = showArchived ? selectedFolder.notes : selectedFolder.notes.filter(n => !n.archived);
     
     // Sort: pinned first, then by updatedAt
     return notes.sort((a, b) => {
