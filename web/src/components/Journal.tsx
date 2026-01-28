@@ -2,27 +2,35 @@ import { useState, useEffect, useCallback } from 'react';
 import { loadAuthState } from '../lib/auth';
 import { encryptBlob, decryptBlob } from '../lib/crypto';
 import { upsertBlob, getBlob } from '../lib/api';
-import './Journals.css';
+import './Journal.css';
 
 type SortField = 'createdAt' | 'updatedAt' | 'describedDay';
 
-interface JournalEntry {
+type JournalEntry = {
   id: string;
   content: string;
+  describedDay?: string; // YYYY-MM-DD; required+unique if dailyMode
   createdAt: number;
   updatedAt: number;
-  describedDay?: string; // Format: YYYY-MM-DD - describes a specific day
-}
+  archived?: boolean;
+};
 
-interface Journal {
+type Journal = {
   id: string;
   title: string;
-  entries: JournalEntry[];
   createdAt: number;
   updatedAt: number;
-  dailyMode?: boolean; // Whether this journal is in daily mode (each entry describes a day)
-  groupByMonths?: boolean; // Whether to group entries by month/year in the view
-}
+  archived?: boolean;
+
+  dailyMode?: boolean;
+  groupByMonths?: boolean;
+
+  entries: JournalEntry[];
+};
+
+type JournalsData = {
+  journals: Journal[];
+};
 
 interface ValidationIssue {
   entryId: string;
@@ -30,13 +38,9 @@ interface ValidationIssue {
   issues: string[];
 }
 
-interface JournalsData {
-  journals: Journal[];
-}
+const BLOB_NAME = 'journal';
 
-const BLOB_NAME = 'journals';
-
-export default function Journals() {
+export default function Journal() {
   const [journals, setJournals] = useState<Journal[]>([]);
   const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null);
   const [newEntry, setNewEntry] = useState('');
@@ -89,8 +93,8 @@ export default function Journals() {
   const cleanJournal = (journal: Journal): Journal => {
     try {
       console.log('[cleanJournal] Starting to clean journal:', journal.id);
-      const allowedJournalFields = ['id', 'title', 'entries', 'createdAt', 'updatedAt', 'dailyMode', 'groupByMonths'];
-      const allowedEntryFields = ['id', 'content', 'createdAt', 'updatedAt', 'describedDay'];
+      const allowedJournalFields = ['id', 'title', 'entries', 'createdAt', 'updatedAt', 'archived', 'dailyMode', 'groupByMonths'];
+      const allowedEntryFields = ['id', 'content', 'createdAt', 'updatedAt', 'describedDay', 'archived'];
       
       // Clean journal fields
       const cleanedJournal: Record<string, unknown> = {};
@@ -160,7 +164,7 @@ export default function Journals() {
       }
     } catch (err) {
       const error = err as Error;
-      setError(error.message || 'Failed to load journals');
+      setError(error.message || 'Failed to load journal');
     } finally {
       setLoading(false);
     }
@@ -717,14 +721,14 @@ export default function Journals() {
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `journals-export-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `journal-export-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
       const error = err as Error;
-      setError(error.message || 'Failed to export journals');
+      setError(error.message || 'Failed to export journal');
     }
   };
 
@@ -743,7 +747,7 @@ export default function Journals() {
         const importData: JournalsData = JSON.parse(text);
         
         if (!importData.journals || !Array.isArray(importData.journals)) {
-          throw new Error('Invalid journals data format');
+          throw new Error('Invalid journal data format');
         }
 
         // Validate data structure
@@ -786,7 +790,7 @@ export default function Journals() {
         alert(`Successfully imported ${sorted.length} journals!`);
       } catch (err) {
         const error = err as Error;
-        setError(error.message || 'Failed to import journals');
+        setError(error.message || 'Failed to import journal');
       } finally {
         setSaving(false);
       }
@@ -797,27 +801,27 @@ export default function Journals() {
 
   if (loading) {
     return (
-      <div className="journals-container">
-        <div className="loading">Loading journals...</div>
+      <div className="journal-container">
+        <div className="loading">Loading journal...</div>
       </div>
     );
   }
 
   return (
-    <div className="journals-container">
-      <div className="journals-sidebar">
+    <div className="journal-container">
+      <div className="journal-sidebar">
         <div className="sidebar-header">
-          <h2>Journals</h2>
+          <h2>Journal</h2>
           <button onClick={handleCreateJournal} className="btn-new">
             + New
           </button>
         </div>
         
         <div className="sidebar-actions">
-          <button onClick={handleExport} className="btn-export" title="Export journals">
+          <button onClick={handleExport} className="btn-export" title="Export journal">
             📥 Export
           </button>
-          <button onClick={handleImport} className="btn-import" title="Import journals">
+          <button onClick={handleImport} className="btn-import" title="Import journal">
             📤 Import
           </button>
         </div>
@@ -851,7 +855,7 @@ export default function Journals() {
           </div>
         )}
         
-        <div className="journals-list">
+        <div className="journal-list">
           {journals.length === 0 ? (
             <div className="empty-state">No journals yet. Create one!</div>
           ) : (

@@ -1,11 +1,11 @@
-.journals-container {
+.journal-container {
     display: flex;
     height: 100%;
     background: #f8f9fa;
 }
 
 /* Sidebar */
-.journals-sidebar {
+.journal-sidebar {
     width: 280px;
     background: #ffffff;
     border-right: 1px solid #dde1e6;
@@ -141,8 +141,8 @@
     background: #d1d5db;
 }
 
-/* Journals List */
-.journals-list {
+/* Journal List */
+.journal-list {
     flex: 1;
     overflow-y: auto;
 }
@@ -912,22 +912,22 @@
 }
 
 /* Scrollbar styling */
-.journals-list::-webkit-scrollbar,
+.journal-list::-webkit-scrollbar,
 .journal-content::-webkit-scrollbar {
     width: 6px;
 }
 
-.journals-list::-webkit-scrollbar-track,
+.journal-list::-webkit-scrollbar-track,
 .journal-content::-webkit-scrollbar-track {
     background: #f8f9fa;
 }
 
-.journals-list::-webkit-scrollbar-thumb {
+.journal-list::-webkit-scrollbar-thumb {
     background: #c1c7cd;
     border-radius: 3px;
 }
 
-.journals-list::-webkit-scrollbar-thumb:hover {
+.journal-list::-webkit-scrollbar-thumb:hover {
     background: #9ca3af;
 }
 

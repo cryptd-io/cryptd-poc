@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import Auth from './components/Auth';
 import Notes from './components/Notes';
-import Journals from './components/Journals';
+import Lists from './components/Lists';
+import Journal from './components/Journal';
+import Boards from './components/Boards';
 import { isAuthenticated, clearAuthState, getUsername } from './lib/auth';
 import { onSessionExpired } from './lib/api';
 import { startSessionMonitoring, stopSessionMonitoring } from './lib/sessionManager';
@@ -55,10 +57,22 @@ function Layout({ children }: { children: React.ReactNode }) {
             📝 Notes
           </Link>
           <Link 
-            to="/journals" 
-            className={`nav-link ${location.pathname === '/journals' ? 'active' : ''}`}
+            to="/lists" 
+            className={`nav-link ${location.pathname === '/lists' ? 'active' : ''}`}
           >
-            📔 Journals
+            ✅ Lists
+          </Link>
+          <Link 
+            to="/journal" 
+            className={`nav-link ${location.pathname === '/journal' ? 'active' : ''}`}
+          >
+            📔 Journal
+          </Link>
+          <Link 
+            to="/boards" 
+            className={`nav-link ${location.pathname === '/boards' ? 'active' : ''}`}
+          >
+            📋 Boards
           </Link>
         </div>
 
@@ -115,10 +129,28 @@ function App() {
         />
         
         <Route
-          path="/journals"
+          path="/lists"
           element={
             <ProtectedRoute>
-              <Journals />
+              <Lists />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/journal"
+          element={
+            <ProtectedRoute>
+              <Journal />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/boards"
+          element={
+            <ProtectedRoute>
+              <Boards />
             </ProtectedRoute>
           }
         />

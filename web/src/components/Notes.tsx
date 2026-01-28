@@ -27,7 +27,7 @@ type NotesData = {
   folders: NotesFolder[];
 };
 
-const BLOB_NAME = 'notes2';
+const BLOB_NAME = 'notes';
 
 export default function Notes() {
   const [folders, setFolders] = useState<NotesFolder[]>([]);
