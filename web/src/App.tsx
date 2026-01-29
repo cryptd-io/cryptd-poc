@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import Auth from './components/Auth';
 import Notes from './components/Notes';
+import Lists from './components/Lists';
 import Journals from './components/Journals';
+import Boards from './components/Boards';
 import { isAuthenticated, clearAuthState, getUsername } from './lib/auth';
 import { onSessionExpired } from './lib/api';
 import { startSessionMonitoring, stopSessionMonitoring } from './lib/sessionManager';
@@ -55,10 +57,22 @@ function Layout({ children }: { children: React.ReactNode }) {
             📝 Notes
           </Link>
           <Link 
+            to="/lists" 
+            className={`nav-link ${location.pathname === '/lists' ? 'active' : ''}`}
+          >
+            ✅ Lists
+          </Link>
+          <Link 
             to="/journals" 
             className={`nav-link ${location.pathname === '/journals' ? 'active' : ''}`}
           >
             📔 Journals
+          </Link>
+          <Link 
+            to="/boards" 
+            className={`nav-link ${location.pathname === '/boards' ? 'active' : ''}`}
+          >
+            📋 Boards
           </Link>
         </div>
 
@@ -115,10 +129,28 @@ function App() {
         />
         
         <Route
+          path="/lists"
+          element={
+            <ProtectedRoute>
+              <Lists />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
           path="/journals"
           element={
             <ProtectedRoute>
               <Journals />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/boards"
+          element={
+            <ProtectedRoute>
+              <Boards />
             </ProtectedRoute>
           }
         />

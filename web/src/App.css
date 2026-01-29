@@ -1,32 +1,20 @@
-* {
-  box-sizing: border-box;
-}
-
-html, body, #root {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+/* App Layout */
 .app-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  background: var(--color-bg);
 }
 
-/* Navigation */
+/* Navigation Bar */
 .app-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
-  background: #ffffff;
-  border-bottom: 1px solid #dde1e6;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--color-bg-white);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 64px;
 }
 
 .nav-brand {
@@ -35,7 +23,6 @@ html, body, #root {
   gap: 10px;
   font-weight: 600;
   font-size: 1.25rem;
-  color: #1c1f23;
 }
 
 .nav-logo {
@@ -43,65 +30,65 @@ html, body, #root {
 }
 
 .nav-title {
-  color: #6d4aff;
+  color: var(--color-primary);
 }
 
 .nav-links {
   display: flex;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .nav-link {
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-sm);
   text-decoration: none;
-  color: #464c52;
+  color: var(--color-text-secondary);
   font-weight: 500;
-  font-size: 0.9375rem;
-  transition: background 0.15s, color 0.15s;
+  font-size: var(--font-size-base);
+  transition: background var(--transition-fast), color var(--transition-fast);
 }
 
 .nav-link:hover {
-  background: #f5f6f8;
-  color: #1c1f23;
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
 }
 
 .nav-link.active {
-  background: #6d4aff;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-bg-white);
 }
 
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-md);
 }
 
 .username {
-  color: #464c52;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   font-weight: 400;
-  font-size: 0.875rem;
 }
 
 .btn-logout {
   padding: 7px 14px;
-  border: 1px solid #c1c7cd;
-  border-radius: 4px;
-  background: #ffffff;
-  color: #464c52;
-  font-size: 0.875rem;
+  border: 1px solid var(--color-border-dark);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-white);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast);
 }
 
 .btn-logout:hover {
-  border-color: #dc2626;
-  color: #dc2626;
-  background: #fef2f2;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: var(--color-danger-light);
 }
 
-/* Main Content */
+/* Main Content Area */
 .app-main {
   flex: 1;
   overflow: hidden;
@@ -111,7 +98,7 @@ html, body, #root {
 @media (max-width: 768px) {
   .app-nav {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: var(--spacing-md);
   }
 
   .nav-brand {
