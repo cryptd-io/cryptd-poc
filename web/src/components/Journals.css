@@ -1,11 +1,11 @@
-.journal-container {
+.journals-container {
   display: flex;
   height: 100%;
   background: var(--color-bg);
 }
 
 /* === SIDEBAR === */
-.journal-sidebar {
+.journals-sidebar {
   width: 280px;
   background: var(--color-bg-white);
   border-right: 1px solid var(--color-border);
@@ -94,13 +94,13 @@
 }
 
 /* === NEW JOURNAL FORM === */
-.new-journal-form {
+.new-journals-form {
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
 }
 
-.journal-title-input {
+.journals-title-input {
   width: 100%;
   padding: 10px var(--spacing-md);
   border: 1px solid var(--color-border-dark);
@@ -114,12 +114,12 @@
   color: var(--color-text-primary);
 }
 
-.journal-title-input:focus {
+.journals-title-input:focus {
   outline: none;
   border-color: var(--color-primary);
 }
 
-.journal-title-input::placeholder {
+.journals-title-input::placeholder {
   color: var(--color-text-disabled);
 }
 
@@ -164,32 +164,32 @@
 }
 
 /* === JOURNAL LIST === */
-.journal-list {
+.journals-list {
   flex: 1;
   overflow-y: auto;
 }
 
-.journal-item {
+.journals-item {
   padding: 14px var(--spacing-lg);
   border-bottom: 1px solid var(--color-border-light);
   cursor: pointer;
   transition: background var(--transition-fast);
 }
 
-.journal-item:hover {
+.journals-item:hover {
   background: var(--color-bg-hover);
 }
 
-.journal-item.active {
+.journals-item.active {
   background: var(--color-bg-active);
   border-left: 3px solid var(--color-primary);
 }
 
-.journal-item.archived {
+.journals-item.archived {
   opacity: 0.6;
 }
 
-.journal-title {
+.journals-title {
   font-weight: 500;
   color: var(--color-text-primary);
   margin-bottom: 6px;
@@ -204,25 +204,25 @@
   flex-shrink: 0;
 }
 
-.journal-info {
+.journals-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.journal-count {
+.journals-count {
   font-size: var(--font-size-xs);
   color: var(--color-primary);
   font-weight: 400;
 }
 
-.journal-date {
+.journals-date {
   font-size: 0.75rem;
   color: var(--color-text-tertiary);
 }
 
 /* === JOURNAL CONTENT AREA === */
-.journal-content {
+.journals-content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -230,7 +230,7 @@
   overflow-y: auto;
 }
 
-.journal-header {
+.journals-header {
   padding: var(--spacing-xl) var(--spacing-2xl);
   background: var(--color-bg-white);
   border-bottom: 1px solid var(--color-border);
@@ -239,14 +239,14 @@
   align-items: center;
 }
 
-.journal-header h1 {
+.journals-header h1 {
   margin: 0;
   font-size: var(--font-size-2xl);
   font-weight: 600;
   color: var(--color-text-primary);
 }
 
-.journal-header-actions {
+.journals-header-actions {
   display: flex;
   gap: var(--spacing-sm);
   align-items: center;
@@ -289,14 +289,14 @@
 }
 
 /* === RENAME JOURNAL FORM === */
-.rename-journal-form {
+.rename-journals-form {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
   flex: 1;
 }
 
-.rename-journal-input {
+.rename-journals-input {
   flex: 1;
   padding: 10px 14px;
   border: 1px solid var(--color-primary);
@@ -310,7 +310,7 @@
   color: var(--color-text-primary);
 }
 
-.rename-journal-input:focus {
+.rename-journals-input:focus {
   outline: none;
   border-color: var(--color-primary-hover);
 }
@@ -355,7 +355,7 @@
   background: #d1d5db;
 }
 
-.btn-rename-journal {
+.btn-rename-journals {
   padding: 9px 18px;
   border: none;
   border-radius: var(--radius-sm);
@@ -367,7 +367,7 @@
   transition: background var(--transition-fast);
 }
 
-.btn-rename-journal:hover {
+.btn-rename-journals:hover {
   background: var(--color-primary-hover);
 }
 
@@ -387,7 +387,7 @@
   background: #047857;
 }
 
-.btn-delete-journal {
+.btn-delete-journals {
   padding: 9px 18px;
   border: none;
   border-radius: var(--radius-sm);
@@ -399,11 +399,11 @@
   transition: background var(--transition-fast);
 }
 
-.btn-delete-journal:hover {
+.btn-delete-journals:hover {
   background: var(--color-danger-hover);
 }
 
-.btn-archive-journal {
+.btn-archive-journals {
   padding: 9px 18px;
   border: none;
   border-radius: var(--radius-sm);
@@ -415,7 +415,7 @@
   transition: background var(--transition-fast);
 }
 
-.btn-archive-journal:hover {
+.btn-archive-journals:hover {
   background: #d97706;
 }
 

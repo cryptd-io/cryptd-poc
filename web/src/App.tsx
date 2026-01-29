@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Link, useLocation, useNavigate 
 import Auth from './components/Auth';
 import Notes from './components/Notes';
 import Lists from './components/Lists';
-import Journal from './components/Journal';
+import Journals from './components/Journals';
 import Boards from './components/Boards';
 import { isAuthenticated, clearAuthState, getUsername } from './lib/auth';
 import { onSessionExpired } from './lib/api';
@@ -63,10 +63,10 @@ function Layout({ children }: { children: React.ReactNode }) {
             ✅ Lists
           </Link>
           <Link 
-            to="/journal" 
-            className={`nav-link ${location.pathname === '/journal' ? 'active' : ''}`}
+            to="/journals" 
+            className={`nav-link ${location.pathname === '/journals' ? 'active' : ''}`}
           >
-            📔 Journal
+            📔 Journals
           </Link>
           <Link 
             to="/boards" 
@@ -138,10 +138,10 @@ function App() {
         />
         
         <Route
-          path="/journal"
+          path="/journals"
           element={
             <ProtectedRoute>
-              <Journal />
+              <Journals />
             </ProtectedRoute>
           }
         />

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { loadAuthState } from '../lib/auth';
 import { encryptBlob, decryptBlob } from '../lib/crypto';
 import { upsertBlob, getBlob } from '../lib/api';
-import './Journal.css';
+import './Journals.css';
 
 type SortField = 'createdAt' | 'updatedAt' | 'describedDay';
 
@@ -38,9 +38,9 @@ interface ValidationIssue {
   issues: string[];
 }
 
-const BLOB_NAME = 'journal';
+const BLOB_NAME = 'journals';
 
-export default function Journal() {
+export default function Journals() {
   const [journals, setJournals] = useState<Journal[]>([]);
   const [selectedJournal, setSelectedJournal] = useState<Journal | null>(null);
   const [newEntry, setNewEntry] = useState('');
@@ -165,7 +165,7 @@ export default function Journal() {
       }
     } catch (err) {
       const error = err as Error;
-      setError(error.message || 'Failed to load journal');
+      setError(error.message || 'Failed to load journals');
     } finally {
       setLoading(false);
     }
@@ -786,14 +786,14 @@ export default function Journal() {
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = `journal-export-${new Date().toISOString().split('T')[0]}.json`;
+      link.download = `journals-export-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err) {
       const error = err as Error;
-      setError(error.message || 'Failed to export journal');
+      setError(error.message || 'Failed to export journals');
     }
   };
 
@@ -828,14 +828,14 @@ export default function Journal() {
         const importData: JournalsData = JSON.parse(text);
         
         if (!importData.journals || !Array.isArray(importData.journals)) {
-          throw new Error('Invalid journal data format');
+          throw new Error('Invalid journals data format');
         }
 
         // Validate data structure
         for (const journal of importData.journals) {
           if (!journal.id || !journal.title || !journal.entries ||
               !Array.isArray(journal.entries) || !journal.createdAt || !journal.updatedAt) {
-            throw new Error('Invalid journal format in import file');
+            throw new Error('Invalid journals format in import file');
           }
           for (const entry of journal.entries) {
             if (!entry.id || entry.content === undefined || 
@@ -871,7 +871,7 @@ export default function Journal() {
         alert(`Successfully imported ${sorted.length} journals!`);
       } catch (err) {
         const error = err as Error;
-        setError(error.message || 'Failed to import journal');
+        setError(error.message || 'Failed to import journals');
       } finally {
         setSaving(false);
       }
@@ -882,27 +882,27 @@ export default function Journal() {
 
   if (loading) {
     return (
-      <div className="journal-container">
-        <div className="loading">Loading journal...</div>
+      <div className="journals-container">
+        <div className="loading">Loading journals...</div>
       </div>
     );
   }
 
   return (
-    <div className="journal-container">
-      <div className="journal-sidebar">
+    <div className="journals-container">
+      <div className="journals-sidebar">
         <div className="sidebar-header">
-          <h2>Journal</h2>
+          <h2>Journals</h2>
           <button onClick={handleCreateJournal} className="btn-new">
             + New Journal
           </button>
         </div>
         
         <div className="sidebar-actions">
-          <button onClick={handleExport} className="btn-export" title="Export journal">
+          <button onClick={handleExport} className="btn-export" title="Export journals">
             📥 Export
           </button>
-          <button onClick={handleImport} className="btn-import" title="Import journal">
+          <button onClick={handleImport} className="btn-import" title="Import journals">
             📤 Import
           </button>
         </div>
@@ -919,10 +919,10 @@ export default function Journal() {
         </div>
 
         {isCreatingJournal && (
-          <div className="new-journal-form">
+          <div className="new-journals-form">
             <input
               type="text"
-              className="journal-title-input"
+              className="journals-title-input"
               placeholder="Journal title..."
               value={newJournalTitle}
               onChange={(e) => setNewJournalTitle(e.target.value)}
@@ -947,7 +947,7 @@ export default function Journal() {
           </div>
         )}
         
-        <div className="journal-list">
+        <div className="journals-list">
           {getVisibleJournals().length === 0 ? (
             <div className="empty-state">
               {showArchived ? 'No journals yet.' : 'No active journals. Create one!'}
@@ -956,18 +956,18 @@ export default function Journal() {
             getVisibleJournals().map((journal) => (
               <div
                 key={journal.id}
-                className={`journal-item ${selectedJournal?.id === journal.id ? 'active' : ''} ${journal.archived ? 'archived' : ''}`}
+                className={`journals-item ${selectedJournal?.id === journal.id ? 'active' : ''} ${journal.archived ? 'archived' : ''}`}
                 onClick={() => handleSelectJournal(journal)}
               >
-                <div className="journal-title">
+                <div className="journals-title">
                   {journal.archived && <span className="archived-badge">📦</span>}
                   {journal.title}
                 </div>
-                <div className="journal-info">
-                  <span className="journal-count">
+                <div className="journals-info">
+                  <span className="journals-count">
                     {journal.entries.length} {journal.entries.length === 1 ? 'entry' : 'entries'}
                   </span>
-                  <span className="journal-date">
+                  <span className="journals-date">
                     {new Date(journal.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
@@ -977,15 +977,15 @@ export default function Journal() {
         </div>
       </div>
 
-      <div className="journal-content">
+      <div className="journals-content">
         {selectedJournal ? (
           <>
-            <div className="journal-header">
+            <div className="journals-header">
               {isRenamingJournal ? (
-                <div className="rename-journal-form">
+                <div className="rename-journals-form">
                   <input
                     type="text"
-                    className="rename-journal-input"
+                    className="rename-journals-input"
                     placeholder="Journal title..."
                     value={renameJournalTitle}
                     onChange={(e) => setRenameJournalTitle(e.target.value)}
@@ -1011,7 +1011,7 @@ export default function Journal() {
               ) : (
                 <>
                   <h1>{selectedJournal.title}</h1>
-                  <div className="journal-header-actions">
+                  <div className="journals-header-actions">
                     <label className="daily-mode-toggle">
                       <input
                         type="checkbox"
@@ -1037,12 +1037,12 @@ export default function Journal() {
                       />
                       <span>Group by months</span>
                     </label>
-                    <button onClick={handleStartRenameJournal} className="btn-rename-journal">
+                    <button onClick={handleStartRenameJournal} className="btn-rename-journals">
                       ✏️ Rename
                     </button>
                     <button 
                       onClick={handleToggleArchiveJournal} 
-                      className="btn-archive-journal"
+                      className="btn-archive-journals"
                       title={selectedJournal.archived ? 'Unarchive journal' : 'Archive journal'}
                     >
                       {selectedJournal.archived ? '📂 Unarchive' : '📦 Archive'}
@@ -1050,7 +1050,7 @@ export default function Journal() {
                     <button onClick={validateJournal} className="btn-validate" title="Validate journal entries">
                       ✓ Validate
                     </button>
-                    <button onClick={handleDeleteJournal} className="btn-delete-journal">
+                    <button onClick={handleDeleteJournal} className="btn-delete-journals">
                       Delete Journal
                     </button>
                   </div>
