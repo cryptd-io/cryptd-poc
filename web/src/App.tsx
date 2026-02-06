@@ -5,6 +5,7 @@ import Notes from './components/Notes';
 import Lists from './components/Lists';
 import Journals from './components/Journals';
 import Boards from './components/Boards';
+import Contacts from './components/Contacts';
 import { isAuthenticated, clearAuthState, getUsername } from './lib/auth';
 import { onSessionExpired } from './lib/api';
 import { startSessionMonitoring, stopSessionMonitoring } from './lib/sessionManager';
@@ -73,6 +74,12 @@ function Layout({ children }: { children: React.ReactNode }) {
             className={`nav-link ${location.pathname === '/boards' ? 'active' : ''}`}
           >
             📋 Boards
+          </Link>
+          <Link 
+            to="/contacts" 
+            className={`nav-link ${location.pathname === '/contacts' ? 'active' : ''}`}
+          >
+            👤 Contacts
           </Link>
         </div>
 
@@ -151,6 +158,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Boards />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/contacts"
+          element={
+            <ProtectedRoute>
+              <Contacts />
             </ProtectedRoute>
           }
         />
